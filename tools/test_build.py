@@ -23,6 +23,7 @@ class BuildTests(unittest.TestCase):
         self.root = Path(self.temp.name)
         self.original_root = build.ROOT
         shutil.copytree(build.ROOT / 'skills', self.root / 'skills')
+        shutil.copytree(build.ROOT / 'assets', self.root / 'assets')
         shutil.copyfile(build.ROOT / 'release.json', self.root / 'release.json')
         build.ROOT = self.root
         self.addCleanup(setattr, build, 'ROOT', self.original_root)
@@ -49,6 +50,21 @@ class BuildTests(unittest.TestCase):
         self.run_build()
         self.assertTrue((self.root / 'dist/codex/skills/resolve-github-issue/agents/openai.yaml').is_file())
         self.assertFalse((self.root / 'dist/claude/skills/resolve-github-issue/agents').exists())
+
+    def test_codex_icons_are_shipped_and_referenced(self):
+        self.run_build()
+        package = self.root / 'dist/codex'
+        interface = json.loads((package / '.codex-plugin/plugin.json').read_text(encoding='utf-8'))['interface']
+        self.assertEqual(interface['brandColor'], build.BRAND_COLOR)
+        for field, image in build.CODEX_ICONS.items():
+            self.assertEqual(interface[field], f'./assets/{image}')
+            self.assertEqual((package / 'assets' / image).read_bytes(), (self.root / 'assets' / image).read_bytes())
+        self.assertFalse((self.root / 'dist/claude/assets').exists())
+
+    def test_reject_missing_icon(self):
+        (self.root / 'assets/icon.png').unlink()
+        with self.assertRaisesRegex(ValueError, 'Missing icon'):
+            self.run_build()
 
     def test_build_hashes_match_shipped_files_in_stable_order(self):
         self.run_build()

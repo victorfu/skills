@@ -9,6 +9,9 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "victorfu-skills",
-    "shortDescription": "共用的開發工作流程 skills；各 skill 僅依其明確叫用契約執行。"
+    "shortDescription": "共用的開發工作流程 skills；各 skill 僅依其明確叫用契約執行。",
+    "brandColor": "#238636",
+    "composerIcon": "./assets/icon.png",
+    "logo": "./assets/logo.png"
   }
 }
