@@ -1,7 +1,7 @@
 {
   "name": "victorfu-skills",
   "interface": {
-    "displayName": "victorfu-skills"
+    "displayName": "Dev Workflow Kit"
   },
   "plugins": [
     {

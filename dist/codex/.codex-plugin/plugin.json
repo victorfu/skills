@@ -1,6 +1,6 @@
 {
   "name": "victorfu-skills",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "共用的開發工作流程 skills；各 skill 僅依其明確叫用契約執行。",
   "author": {
     "name": "Victor"
@@ -8,7 +8,7 @@
   "repository": "https://github.com/victorfu/skills",
   "skills": "./skills/",
   "interface": {
-    "displayName": "victorfu-skills",
+    "displayName": "Dev Workflow Kit",
     "shortDescription": "共用的開發工作流程 skills；各 skill 僅依其明確叫用契約執行。",
     "brandColor": "#238636",
     "composerIcon": "./assets/icon.png",

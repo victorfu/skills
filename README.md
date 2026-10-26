@@ -1,4 +1,4 @@
-# victorfu-skills
+# Dev Workflow Kit
 
 **English** | [繁體中文](README.zh-TW.md)
 
@@ -61,11 +61,13 @@ The table separates what each client officially supports from what this repo has
 - **The three-OS CI covers packaging tests**: Ubuntu 24.04, macOS 26 ARM64, and Windows Server 2025, each with Python 3.10 and 3.12. All six combinations pass the build-output checks and 10 unit tests. This does not mean Windows 10/11, every CPU architecture, or GUI/model execution has been tested. [CI run](https://github.com/victorfu/skills/actions/runs/40261949089)
 - **macOS CLI test scope**: macOS 27.0.1 ARM64, Codex 0.164.0, Claude Code 2.1.310. Both clients installed `0.1.0` from GitHub, and a `0.1.0 → 0.1.1` update was tested against a local Git fixture, confirming the new process's load path, version, and content hash. `0.1.1` existed only in the isolated fixture and was not published.
 - **Codex passed a signed-in, read-only invocation**: Codex CLI 0.164.0, using an existing ChatGPT sign-in, invoked `$victorfu-skills:resolve-github-issue`; the model read the correct plugin's `SKILL.md` and asked for more information when no repo was given. Claude's isolated invocation still fails because it is not signed in. Neither client has been verified on the full issue → PR flow or on blocking implicit invocation. See the [invocation verification log](docs/verification.md#codex-登入後叫用驗證2026-10-26) (in Traditional Chinese).
-- **Consistent naming**: the skill is `resolve-github-issue`, shown in Codex as "Resolve GitHub Issue"; the plugin and marketplace are `victorfu-skills`. Both CLIs list the skill as `victorfu-skills:resolve-github-issue` when loading the plugin; the prefix is the plugin namespace, not another skill name.
+- **Consistent naming**: the skill is `resolve-github-issue`, shown in Codex as "Resolve GitHub Issue"; the plugin is displayed as "Dev Workflow Kit", while the plugin and marketplace IDs remain `victorfu-skills`. Both CLIs list the skill as `victorfu-skills:resolve-github-issue` when loading the plugin; the prefix is the plugin namespace, not another skill name.
 
 Official sources: [Claude CLI setup](https://code.claude.com/docs/en/setup), [Claude Desktop plugins / WSL limits](https://code.claude.com/docs/en/desktop#install-plugins), [Claude Linux beta](https://code.claude.com/docs/en/desktop-linux), [Codex CLI](https://learn.chatgpt.com/docs/codex/cli), [Codex plugins](https://learn.chatgpt.com/docs/plugins), [Codex Linux preview](https://learn.chatgpt.com/docs/linux/linux-app). For the isolation method, test commands, and what remains unverified, see the [test log](docs/verification.md#隔離客戶端實測2026-10-26) (in Traditional Chinese).
 
 ## Usage
+
+In Codex, select **Dev Workflow Kit** with `@`; the skill picker still shows **Resolve GitHub Issue**. In Claude Code, the plugin picker uses **Dev Workflow Kit** via the manifest's `displayName`; the slash command below is unchanged.
 
 The skill runs only when you invoke it explicitly; pasting an issue URL on its own does not trigger it.
 

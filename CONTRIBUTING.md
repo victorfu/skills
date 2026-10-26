@@ -7,7 +7,7 @@ skills/<name>/                     唯一手寫的來源
   SKILL.md                         frontmatter 只放 name、description，正文是完整流程
   references/                      skill 引用的參考文件
   agents/openai.yaml               Codex 專用的顯示名稱與叫用政策
-release.json                       版本與 plugin metadata
+release.json                       版本與 plugin metadata（name 為穩定 ID，displayName 為顯示名稱）
 assets/icon.svg                    Codex plugin 圖示原稿；icon.png（512）與 logo.png（1024）由它輸出
 tools/build.py                     產生 dist/ 與兩份 marketplace；--check 只比對不寫入
 tools/test_build.py                打包回歸測試（在暫存目錄執行）
