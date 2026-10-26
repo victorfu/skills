@@ -5,7 +5,7 @@
   "platform": "codex",
   "sha256": {
     "skills/resolve-github-issue/SKILL.md": "307a7adace220abdf096ff341e59b646aecf7ad7319315cbb76ffdb3ceb96b1e",
-    "skills/resolve-github-issue/agents/openai.yaml": "cc95bcabda5f6008b7dd655a3bb6e51ff593098ee5cbfabfa3964bf10628168f",
+    "skills/resolve-github-issue/agents/openai.yaml": "706fedf0c0fc603ca080e1421e3764e4fc42e8a7304fe910acc6c64456fb62ce",
     "skills/resolve-github-issue/references/github-workflow.md": "c564134f8bada628b566bad0d0c7a87c16fd2df91a5add401310b62c60b69c1c"
   }
 }

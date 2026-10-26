@@ -93,7 +93,7 @@ class BuildTests(unittest.TestCase):
         new = self.root / 'skills/another-workflow'
         shutil.copytree(source, new)
         for p in (new / 'SKILL.md', new / 'agents/openai.yaml'):
-            write_lf(p, p.read_text(encoding='utf-8').replace('resolve-github-issue', 'another-workflow'))
+            write_lf(p, p.read_text(encoding='utf-8').replace('resolve-github-issue', 'another-workflow').replace('Resolve GitHub Issue', 'Another Workflow'))
         self.run_build()
         self.assertTrue((self.root / 'dist/codex/skills/another-workflow/SKILL.md').is_file())
         shutil.rmtree(new)

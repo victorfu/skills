@@ -61,7 +61,7 @@ codex plugin marketplace add victorfu/skills --ref v0.1.0
 - **三 OS CI 已通過的是打包測試**：Ubuntu 24.04、macOS 26 ARM64、Windows Server 2025，搭配 Python 3.10／3.12，共六組均通過產物檢查與 10 項單元測試。它不代表 Windows 10／11、所有 CPU 架構或 GUI／模型執行都測過。[CI 結果](https://github.com/victorfu/skills/actions/runs/40261949089)
 - **macOS CLI 實測範圍**：macOS 27.0.1 ARM64、Codex 0.164.0、Claude Code 2.1.310。兩邊均從 GitHub 安裝 `0.1.0`，並以本機 Git fixture 測試 `0.1.0 → 0.1.1`；已核對新程序的載入路徑、版本及內容 hash。`0.1.1` 只存在隔離 fixture，並未發布。
 - **Codex 已通過登入後的唯讀叫用**：Codex CLI 0.164.0 以既有 ChatGPT 登入實測 `$victorfu-skills:resolve-github-issue`，模型讀取正確 plugin 的 `SKILL.md`，並在缺少 repo 時要求補充資訊。Claude 的隔離叫用仍因未登入而失敗；兩邊均未驗證完整 issue → PR 流程或隱式叫用禁止。詳見[叫用驗證紀錄](docs/verification.md#codex-登入後叫用驗證2026-10-26)。
-- **名稱一致**：skill 與顯示名稱為 `resolve-github-issue`；plugin／marketplace 為 `victorfu-skills`。兩個 CLI 的 plugin 載入清單均以 `victorfu-skills:resolve-github-issue` 識別 skill，集合前綴不是另一個 skill 名稱。
+- **名稱一致**：skill 名稱為 `resolve-github-issue`，Codex 顯示名稱為「Resolve GitHub Issue」；plugin／marketplace 為 `victorfu-skills`。兩個 CLI 的 plugin 載入清單均以 `victorfu-skills:resolve-github-issue` 識別 skill，集合前綴不是另一個 skill 名稱。
 
 官方依據：[Claude CLI 環境](https://code.claude.com/docs/en/setup)、[Claude Desktop plugins／WSL 限制](https://code.claude.com/docs/en/desktop#install-plugins)、[Claude Linux beta](https://code.claude.com/docs/en/desktop-linux)、[Codex CLI](https://learn.chatgpt.com/docs/codex/cli)、[Codex plugins](https://learn.chatgpt.com/docs/plugins)、[Codex Linux preview](https://learn.chatgpt.com/docs/linux/linux-app)。隔離方法、測試命令與尚未驗證項目見 [實測紀錄](docs/verification.md#隔離客戶端實測2026-10-26)。
 

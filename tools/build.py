@@ -73,7 +73,7 @@ def expected_files():
         require(meta['name'] == skill.name and len(skill.name) <= 64 and re.fullmatch(r'[a-z0-9]+(?:-[a-z0-9]+)*', skill.name), 'Skill name mismatch')
         require(isinstance(meta['description'], str) and 0 < len(meta['description']) <= 1024, 'Invalid description')
         ui = load_mapping((skill / 'agents/openai.yaml').read_text(encoding='utf-8'), f'{skill.name}: agents/openai.yaml')
-        require(ui['interface']['display_name'] == skill.name, 'Display name mismatch')
+        require(isinstance(ui['interface']['display_name'], str) and ui['interface']['display_name'].lower().replace(' ', '-') == skill.name, 'Display name mismatch')
         require(25 <= len(ui['interface']['short_description']) <= 64, 'Invalid short description length')
         require(ui['policy']['allow_implicit_invocation'] is False, 'Explicit invocation required')
         invocation = f"${release['name']}:{skill.name}"
