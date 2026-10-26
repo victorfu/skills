@@ -15,25 +15,6 @@
 
 不需要 Python 或額外的 API key。
 
-## App／CLI／OS 支援與實測
-
-下表區分「客戶端官方支援」與「本 repo 已實測」，不是所有格子都已完成端到端驗證。查證日期：2026-10-26。
-
-| 客戶端 | macOS | Windows 原生 | Ubuntu 原生 |
-| --- | --- | --- | --- |
-| Claude Code CLI | 官方支援；已隔離測試安裝、載入與更新 | 官方支援；本包 CLI 未實測 | 官方支援（20.04+）；本包 CLI 未實測 |
-| Claude Code App（Desktop 的 Code 本機 session） | 官方支援 plugins；GUI 未實測 | 官方支援 plugins；GUI 未實測 | Linux beta（22.04+）；GUI 未實測 |
-| Codex CLI | 官方支援；已隔離測試安裝、載入與更新 | 官方支援；本包 CLI 未實測 | 官方支援；本包 CLI 未實測 |
-| Codex App（新版文件稱 ChatGPT Desktop 的 Codex） | 官方支援 plugins；GUI 未實測 | 官方支援 plugins；GUI 未實測 | Linux preview（24.04／26.04 LTS）；GUI 未實測 |
-
-- **WSL 另算**：Claude Desktop 的 WSL session 官方明列不支援 plugins，不能套用 Windows 原生欄；這不等同於 WSL 裡的 Claude CLI 不支援。Cloud／Cowork 也不在此本機 Code session 矩陣內。
-- **三 OS CI 已通過的是打包測試**：Ubuntu 24.04、macOS 26 ARM64、Windows Server 2025，搭配 Python 3.10／3.12，共六組均通過產物檢查與 10 項單元測試。它不代表 Windows 10／11、所有 CPU 架構或 GUI／模型執行都測過。[CI 結果](https://github.com/victorfu/skills/actions/runs/40261949089)
-- **macOS CLI 實測範圍**：macOS 27.0.1 ARM64、Codex 0.164.0、Claude Code 2.1.310。兩邊均從 GitHub 安裝 `0.1.0`，並以本機 Git fixture 測試 `0.1.0 → 0.1.1`；已核對新程序的載入路徑、版本及內容 hash。`0.1.1` 只存在隔離 fixture，並未發布。
-- **叫用尚未通過模型驗證**：已確認 Codex `skills/list` 及 Claude 啟動事件能找到正確 skill；實際送出唯讀叫用時，空白登入環境分別回報 401／`Not logged in`。未複製現有登入或 API key，因此不能宣稱模型已遵守流程或已實測隱式叫用禁止。
-- **名稱一致**：skill 與顯示名稱為 `resolve-github-issue`；plugin／marketplace 為 `victorfu-skills`。兩個 CLI 的 plugin 載入清單均以 `victorfu-skills:resolve-github-issue` 識別 skill，集合前綴不是另一個 skill 名稱。
-
-官方依據：[Claude CLI 環境](https://code.claude.com/docs/en/setup)、[Claude Desktop plugins／WSL 限制](https://code.claude.com/docs/en/desktop#install-plugins)、[Claude Linux beta](https://code.claude.com/docs/en/desktop-linux)、[Codex CLI](https://learn.chatgpt.com/docs/codex/cli)、[Codex plugins](https://learn.chatgpt.com/docs/plugins)、[Codex Linux preview](https://learn.chatgpt.com/docs/linux/linux-app)。隔離方法、測試命令與尚未驗證項目見 [實測紀錄](docs/verification.md#隔離客戶端實測2026-10-26)。
-
 ## 安裝
 
 ### Claude Code
@@ -62,6 +43,25 @@ codex plugin add victorfu-skills@victorfu-skills
 claude plugin marketplace add "victorfu/skills#v0.1.0"
 codex plugin marketplace add victorfu/skills --ref v0.1.0
 ```
+
+## App／CLI／OS 支援與實測
+
+下表區分「客戶端官方支援」與「本 repo 已實測」，不是所有格子都已完成端到端驗證。查證日期：2026-10-26。
+
+| 客戶端 | macOS | Windows 原生 | Ubuntu 原生 |
+| --- | --- | --- | --- |
+| Claude Code CLI | 官方支援；已隔離測試安裝、載入與更新 | 官方支援；本包 CLI 未實測 | 官方支援（20.04+）；本包 CLI 未實測 |
+| Claude Code App（Desktop 的 Code 本機 session） | 官方支援 plugins；GUI 未實測 | 官方支援 plugins；GUI 未實測 | Linux beta（22.04+）；GUI 未實測 |
+| Codex CLI | 官方支援；已隔離測試安裝、載入與更新 | 官方支援；本包 CLI 未實測 | 官方支援；本包 CLI 未實測 |
+| Codex App（新版文件稱 ChatGPT Desktop 的 Codex） | 官方支援 plugins；GUI 未實測 | 官方支援 plugins；GUI 未實測 | Linux preview（24.04／26.04 LTS）；GUI 未實測 |
+
+- **WSL 另算**：Claude Desktop 的 WSL session 官方明列不支援 plugins，不能套用 Windows 原生欄；這不等同於 WSL 裡的 Claude CLI 不支援。Cloud／Cowork 也不在此本機 Code session 矩陣內。
+- **三 OS CI 已通過的是打包測試**：Ubuntu 24.04、macOS 26 ARM64、Windows Server 2025，搭配 Python 3.10／3.12，共六組均通過產物檢查與 10 項單元測試。它不代表 Windows 10／11、所有 CPU 架構或 GUI／模型執行都測過。[CI 結果](https://github.com/victorfu/skills/actions/runs/40261949089)
+- **macOS CLI 實測範圍**：macOS 27.0.1 ARM64、Codex 0.164.0、Claude Code 2.1.310。兩邊均從 GitHub 安裝 `0.1.0`，並以本機 Git fixture 測試 `0.1.0 → 0.1.1`；已核對新程序的載入路徑、版本及內容 hash。`0.1.1` 只存在隔離 fixture，並未發布。
+- **叫用尚未通過模型驗證**：已確認 Codex `skills/list` 及 Claude 啟動事件能找到正確 skill；實際送出唯讀叫用時，空白登入環境分別回報 401／`Not logged in`。未複製現有登入或 API key，因此不能宣稱模型已遵守流程或已實測隱式叫用禁止。
+- **名稱一致**：skill 與顯示名稱為 `resolve-github-issue`；plugin／marketplace 為 `victorfu-skills`。兩個 CLI 的 plugin 載入清單均以 `victorfu-skills:resolve-github-issue` 識別 skill，集合前綴不是另一個 skill 名稱。
+
+官方依據：[Claude CLI 環境](https://code.claude.com/docs/en/setup)、[Claude Desktop plugins／WSL 限制](https://code.claude.com/docs/en/desktop#install-plugins)、[Claude Linux beta](https://code.claude.com/docs/en/desktop-linux)、[Codex CLI](https://learn.chatgpt.com/docs/codex/cli)、[Codex plugins](https://learn.chatgpt.com/docs/plugins)、[Codex Linux preview](https://learn.chatgpt.com/docs/linux/linux-app)。隔離方法、測試命令與尚未驗證項目見 [實測紀錄](docs/verification.md#隔離客戶端實測2026-10-26)。
 
 ## 使用
 
