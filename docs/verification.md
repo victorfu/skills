@@ -47,7 +47,7 @@ Claude 驗證器另外顯示公共 plugin directory 的 LICENSE_MISSING 與 ICON
 
 ## 尚未驗證及使用者下一步
 
-- Linux／Windows：審查後的修正尚未在 GitHub Actions 上執行（見下一節）。Windows symlink 若無權限，該項測試會 skip 並顯示原因，其餘打包不依賴 symlink。
+- Linux／Windows：build `--check` 與單元測試已在 GitHub Actions 通過（見下一節）。若 Windows 環境沒有建立 symlink 的權限，該項測試會 skip 並顯示原因，其餘打包不依賴 symlink。
 - 未實際啟動模型 session 或安裝 plugin；明確叫用控制、namespaced 顯示、managed settings、熱載入與同名來源選取仍需客戶端 smoke test。
 - 未跑 GitHub marketplace 安裝／升版／回退端到端測試，因新包及 tag 尚未發布，且初版作業範圍不含安裝與遠端發布。
 - Codex snapshot refresh 是否立即刷新該版本的 plugin cache，需在使用者實際客戶端核對；不保證 `git pull` 更新已安裝包。
@@ -77,4 +77,4 @@ Claude 驗證器另外顯示公共 plugin directory 的 LICENSE_MISSING 與 ICON
 | `git diff --check` | 通過。 |
 | `claude plugin validate dist/claude --strict`、`claude plugin validate .claude-plugin/marketplace.json --strict` | 皆通過。 |
 
-尚未驗證：修正後的 Linux／Windows CI 要等推送後才會執行。
+GitHub Actions：推送修正及 CI action 升級（`actions/checkout@v7`、`actions/setup-python@v7`，Node 24）後，[run 40261949089](https://github.com/victorfu/skills/actions/runs/40261949089)（commit `e293397`）的 6 個 job 全部通過，涵蓋 ubuntu-latest、macos-latest、windows-latest 各搭配 Python 3.10 與 3.12。每個 job 的 `build.py --check` 都輸出 `PASS: 13 generated files`，10 項單元測試均為 `OK`；Windows 上的 symlink 測試實際執行並通過，沒有被略過。原本失敗的 windows-latest 已經通過；annotations 與完整 log 都不再出現 Node.js 20 淘汰警告。
