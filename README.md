@@ -1,21 +1,23 @@
 # victorfu-skills
 
-給 [Claude Code](https://code.claude.com) 與 [Codex](https://developers.openai.com/codex) 使用的開發工作流程 skills，以 plugin 形式安裝。
+**English** | [繁體中文](README.zh-TW.md)
 
-| Skill | 用途 |
+Development workflow skills for [Claude Code](https://code.claude.com) and [Codex](https://developers.openai.com/codex), installed as a plugin.
+
+| Skill | Purpose |
 | --- | --- |
-| `resolve-github-issue` | 給它一個 GitHub issue，它會先驗證問題是否成立，再修正、測試、審查，最後開 PR。 |
+| `resolve-github-issue` | Give it a GitHub issue: it first verifies the problem is real, then fixes, tests, and reviews it, and finally opens a PR. |
 
-## 需求
+## Requirements
 
-- Claude Code 或 Codex（CLI 或 desktop 皆可）
+- Claude Code or Codex (CLI or desktop)
 - `git`
-- GitHub 存取：已登入的 [GitHub CLI](https://cli.github.com)（`gh auth login`），或客戶端內可用的 GitHub connector
-- 要開 PR 的 repo 需有 push 權限；沒有的話，使用你自己的 fork
+- GitHub access: a signed-in [GitHub CLI](https://cli.github.com) (`gh auth login`), or a GitHub connector available in your client
+- Push access to the repo you want to open a PR against; if you don't have it, use your own fork
 
-不需要 Python 或額外的 API key。
+No Python or extra API keys are required.
 
-## 安裝
+## Installation
 
 ### Claude Code
 
@@ -24,7 +26,7 @@ claude plugin marketplace add victorfu/skills
 claude plugin install victorfu-skills@victorfu-skills
 ```
 
-也可以在 Claude Code 對話中執行 `/plugin marketplace add victorfu/skills`，再執行 `/plugin install victorfu-skills@victorfu-skills`。安裝後重新啟動 Claude Code，或執行 `/reload-plugins`。
+You can also run `/plugin marketplace add victorfu/skills` and then `/plugin install victorfu-skills@victorfu-skills` inside a Claude Code conversation. After installing, restart Claude Code or run `/reload-plugins`.
 
 ### Codex
 
@@ -33,69 +35,69 @@ codex plugin marketplace add victorfu/skills
 codex plugin add victorfu-skills@victorfu-skills
 ```
 
-安裝後重新啟動 Codex。Codex desktop 也可以從 Plugins 目錄安裝。
+Restart Codex after installing. Codex desktop can also install it from the Plugins directory.
 
-### 固定版本
+### Pinning a version
 
-上面的指令會追蹤預設分支。發布版本 tag 之後，可以改成釘選特定版本：
+The commands above track the default branch. Once release tags are published, you can pin a specific version instead:
 
 ```sh
 claude plugin marketplace add "victorfu/skills#v0.1.0"
 codex plugin marketplace add victorfu/skills --ref v0.1.0
 ```
 
-## App／CLI／OS 支援與實測
+## App / CLI / OS support and testing
 
-下表區分「客戶端官方支援」與「本 repo 已實測」，不是所有格子都已完成端到端驗證。查證日期：2026-10-26。
+The table separates what each client officially supports from what this repo has actually tested; not every cell has been verified end to end. Last checked: 2026-10-26.
 
-| 客戶端 | macOS | Windows 原生 | Ubuntu 原生 |
+| Client | macOS | Windows (native) | Ubuntu (native) |
 | --- | --- | --- | --- |
-| Claude Code CLI | 官方支援；已隔離測試安裝、載入與更新 | 官方支援；本包 CLI 未實測 | 官方支援（20.04+）；本包 CLI 未實測 |
-| Claude Code App（Desktop 的 Code 本機 session） | 官方支援 plugins；GUI 未實測 | 官方支援 plugins；GUI 未實測 | Linux beta（22.04+）；GUI 未實測 |
-| Codex CLI | 官方支援；已隔離測試安裝、載入與更新 | 官方支援；本包 CLI 未實測 | 官方支援；本包 CLI 未實測 |
-| Codex App（新版文件稱 ChatGPT Desktop 的 Codex） | 官方支援 plugins；GUI 未實測 | 官方支援 plugins；GUI 未實測 | Linux preview（24.04／26.04 LTS）；GUI 未實測 |
+| Claude Code CLI | Officially supported; install, load, and update tested in isolation | Officially supported; this plugin not tested on the CLI | Officially supported (20.04+); this plugin not tested on the CLI |
+| Claude Code App (local Code sessions in Desktop) | Plugins officially supported; GUI not tested | Plugins officially supported; GUI not tested | Linux beta (22.04+); GUI not tested |
+| Codex CLI | Officially supported; install, load, and update tested in isolation | Officially supported; this plugin not tested on the CLI | Officially supported; this plugin not tested on the CLI |
+| Codex App (called Codex in ChatGPT Desktop in newer docs) | Plugins officially supported; GUI not tested | Plugins officially supported; GUI not tested | Linux preview (24.04 / 26.04 LTS); GUI not tested |
 
-- **WSL 另算**：Claude Desktop 的 WSL session 官方明列不支援 plugins，不能套用 Windows 原生欄；這不等同於 WSL 裡的 Claude CLI 不支援。Cloud／Cowork 也不在此本機 Code session 矩陣內。
-- **三 OS CI 已通過的是打包測試**：Ubuntu 24.04、macOS 26 ARM64、Windows Server 2025，搭配 Python 3.10／3.12，共六組均通過產物檢查與 10 項單元測試。它不代表 Windows 10／11、所有 CPU 架構或 GUI／模型執行都測過。[CI 結果](https://github.com/victorfu/skills/actions/runs/40261949089)
-- **macOS CLI 實測範圍**：macOS 27.0.1 ARM64、Codex 0.164.0、Claude Code 2.1.310。兩邊均從 GitHub 安裝 `0.1.0`，並以本機 Git fixture 測試 `0.1.0 → 0.1.1`；已核對新程序的載入路徑、版本及內容 hash。`0.1.1` 只存在隔離 fixture，並未發布。
-- **Codex 已通過登入後的唯讀叫用**：Codex CLI 0.164.0 以既有 ChatGPT 登入實測 `$victorfu-skills:resolve-github-issue`，模型讀取正確 plugin 的 `SKILL.md`，並在缺少 repo 時要求補充資訊。Claude 的隔離叫用仍因未登入而失敗；兩邊均未驗證完整 issue → PR 流程或隱式叫用禁止。詳見[叫用驗證紀錄](docs/verification.md#codex-登入後叫用驗證2026-10-26)。
-- **名稱一致**：skill 與顯示名稱為 `resolve-github-issue`；plugin／marketplace 為 `victorfu-skills`。兩個 CLI 的 plugin 載入清單均以 `victorfu-skills:resolve-github-issue` 識別 skill，集合前綴不是另一個 skill 名稱。
+- **WSL is separate**: Claude Desktop's WSL sessions are officially listed as not supporting plugins, so the native Windows column does not apply to them. This does not mean the Claude CLI inside WSL lacks support. Cloud and Cowork sessions are also outside this local Code session matrix.
+- **The three-OS CI covers packaging tests**: Ubuntu 24.04, macOS 26 ARM64, and Windows Server 2025, each with Python 3.10 and 3.12. All six combinations pass the build-output checks and 10 unit tests. This does not mean Windows 10/11, every CPU architecture, or GUI/model execution has been tested. [CI run](https://github.com/victorfu/skills/actions/runs/40261949089)
+- **macOS CLI test scope**: macOS 27.0.1 ARM64, Codex 0.164.0, Claude Code 2.1.310. Both clients installed `0.1.0` from GitHub, and a `0.1.0 → 0.1.1` update was tested against a local Git fixture, confirming the new process's load path, version, and content hash. `0.1.1` existed only in the isolated fixture and was not published.
+- **Codex passed a signed-in, read-only invocation**: Codex CLI 0.164.0, using an existing ChatGPT sign-in, invoked `$victorfu-skills:resolve-github-issue`; the model read the correct plugin's `SKILL.md` and asked for more information when no repo was given. Claude's isolated invocation still fails because it is not signed in. Neither client has been verified on the full issue → PR flow or on blocking implicit invocation. See the [invocation verification log](docs/verification.md#codex-登入後叫用驗證2026-10-26) (in Traditional Chinese).
+- **Consistent naming**: the skill and its display name are `resolve-github-issue`; the plugin and marketplace are `victorfu-skills`. Both CLIs list the skill as `victorfu-skills:resolve-github-issue` when loading the plugin; the prefix is the plugin namespace, not another skill name.
 
-官方依據：[Claude CLI 環境](https://code.claude.com/docs/en/setup)、[Claude Desktop plugins／WSL 限制](https://code.claude.com/docs/en/desktop#install-plugins)、[Claude Linux beta](https://code.claude.com/docs/en/desktop-linux)、[Codex CLI](https://learn.chatgpt.com/docs/codex/cli)、[Codex plugins](https://learn.chatgpt.com/docs/plugins)、[Codex Linux preview](https://learn.chatgpt.com/docs/linux/linux-app)。隔離方法、測試命令與尚未驗證項目見 [實測紀錄](docs/verification.md#隔離客戶端實測2026-10-26)。
+Official sources: [Claude CLI setup](https://code.claude.com/docs/en/setup), [Claude Desktop plugins / WSL limits](https://code.claude.com/docs/en/desktop#install-plugins), [Claude Linux beta](https://code.claude.com/docs/en/desktop-linux), [Codex CLI](https://learn.chatgpt.com/docs/codex/cli), [Codex plugins](https://learn.chatgpt.com/docs/plugins), [Codex Linux preview](https://learn.chatgpt.com/docs/linux/linux-app). For the isolation method, test commands, and what remains unverified, see the [test log](docs/verification.md#隔離客戶端實測2026-10-26) (in Traditional Chinese).
 
-## 使用
+## Usage
 
-Skill 只會在你明確叫用時執行；單純貼上 issue 網址不會觸發。
+The skill runs only when you invoke it explicitly; pasting an issue URL on its own does not trigger it.
 
 ```text
 # Claude Code
 /victorfu-skills:resolve-github-issue https://github.com/OWNER/REPO/issues/123
 
-# Codex plugin（或從 skill picker 選取對應項目）
+# Codex plugin (or pick the matching entry from the skill picker)
 $victorfu-skills:resolve-github-issue https://github.com/OWNER/REPO/issues/123
 ```
 
-本 repo 以 plugin 發布，Codex 叫用與 `agents/openai.yaml` 的 `default_prompt` 統一使用 `$victorfu-skills:resolve-github-issue`，已在登入的 CLI 實測。此完整名稱可區別其他 plugin 中的同名 skill；若自行改為 standalone 安裝，須將叫用及 `default_prompt` 一併改成 `$resolve-github-issue`。
+This repo ships as a plugin, so Codex invocations and the `default_prompt` in `agents/openai.yaml` both use `$victorfu-skills:resolve-github-issue`, which has been tested in a signed-in CLI. The fully qualified name distinguishes it from same-named skills in other plugins. If you install it as a standalone skill instead, change both the invocation and `default_prompt` to `$resolve-github-issue`.
 
-只想評估、不要改任何東西時，在指令後面加上「只評估，不要修改」，它就只會讀取與分析。
+To get an assessment without any changes, add "evaluate only, don't modify anything" after the command; it will then only read and analyze.
 
-也可以只給 issue 編號，例如 `OWNER/REPO#123`；沒寫 repo 時，必須能從目前的工作目錄唯一判斷出目標 repo，否則它會先問你。
+You can also pass just an issue reference, such as `OWNER/REPO#123`. If you leave out the repo, it must be uniquely determinable from the current working directory; otherwise the skill asks you first.
 
-### 完整流程會做什麼
+### What the full workflow does
 
-1. 讀取 issue 與相關程式碼，判定為 `VALID`、`INVALID`、`ALREADY_FIXED` 或 `NEEDS_INFO`。
-2. 在 issue 加上 `in progress` label；沒有 label 權限時略過，並在最後告訴你。
-3. 在獨立的 git worktree 與分支（例如 `fix/issue-123-short-slug`）修正根因，並加入回歸測試。
-4. 執行測試，並審查完整 diff。
-5. Commit、push 修正分支，開一個 ready for review 的 PR，並連結 issue。
+1. Reads the issue and the relevant code, and classifies it as `VALID`, `INVALID`, `ALREADY_FIXED`, or `NEEDS_INFO`.
+2. Adds an `in progress` label to the issue; without permission to add labels, it skips this and tells you at the end.
+3. Fixes the root cause in a separate git worktree and branch (for example `fix/issue-123-short-slug`), and adds a regression test.
+4. Runs the tests and reviews the full diff.
+5. Commits and pushes the fix branch, then opens a ready-for-review PR linked to the issue.
 
-判定為 `VALID` 以外的結果時，不會修改程式碼或開 PR，並移除它自己加上的 label。
+For any result other than `VALID`, it changes no code, opens no PR, and removes the label it added.
 
-它**不會**：merge PR、關閉或重開 issue、在 issue 留言、force push，或直接 push 到 default branch。
+It **does not**: merge the PR, close or reopen the issue, comment on the issue, force push, or push directly to the default branch.
 
-它也不會自行開啟 PR 的 auto-fix；PR 建立後，會依你使用的客戶端告訴你怎麼開。
+It also does not turn on auto-fix for the PR itself; once the PR is open, it tells you how to enable it in the client you are using.
 
-## 更新
+## Updating
 
 ```sh
 # Claude Code
@@ -106,9 +108,9 @@ claude plugin update victorfu-skills@victorfu-skills
 codex plugin marketplace upgrade victorfu-skills
 ```
 
-更新後重新啟動客戶端。Claude Code 只有在 plugin 版本號改變時才會換成新內容。
+Restart the client after updating. Claude Code only switches to new content when the plugin version number changes.
 
-## 移除
+## Uninstalling
 
 ```sh
 # Claude Code
@@ -120,13 +122,13 @@ codex plugin remove victorfu-skills@victorfu-skills
 codex plugin marketplace remove victorfu-skills
 ```
 
-## 疑難排解
+## Troubleshooting
 
-- **叫用到另一個版本的 skill**：你的環境裡可能已有同名的 standalone skill（例如 `~/.claude/skills/resolve-github-issue/`）。在 Claude Code 中改用帶 namespace 的 `/victorfu-skills:resolve-github-issue`。
-- **更新後仍是舊版**：重新啟動客戶端或開新 session；Claude Code 需要版本號改變才會更新快取。
-- **Codex 沒有 `plugin add` 指令**：Codex 版本太舊，請先升級，或改從 desktop 的 Plugins 目錄安裝。
-- **`gh` 權限錯誤**：執行 `gh auth status` 確認已登入，且帳號對目標 repo 有存取權。
+- **A different version of the skill runs**: your environment may already have a standalone skill with the same name (for example `~/.claude/skills/resolve-github-issue/`). In Claude Code, use the namespaced `/victorfu-skills:resolve-github-issue` instead.
+- **Still on the old version after updating**: restart the client or start a new session; Claude Code only refreshes its cache when the version number changes.
+- **Codex has no `plugin add` command**: your Codex version is too old. Upgrade it first, or install from the Plugins directory in the desktop app.
+- **`gh` permission errors**: run `gh auth status` to confirm you are signed in and that the account can access the target repo.
 
-## 參與開發
+## Contributing
 
-`skills/` 是唯一的手寫來源，`dist/` 與兩份 marketplace 檔案由 `tools/build.py` 產生。建置、測試、本機試用與發布流程見 [CONTRIBUTING.md](CONTRIBUTING.md)。
+`skills/` is the only hand-written source; `dist/` and both marketplace files are generated by `tools/build.py`. For building, testing, trying it locally, and releasing, see [CONTRIBUTING.md](CONTRIBUTING.md) (in Traditional Chinese).
