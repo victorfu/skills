@@ -23,13 +23,13 @@ git remote -v
 
 ## in progress 標籤
 
-先讀 issue 原有 labels，保存 label_preexisting。列出所有 repo labels 並以名稱核對，避免只查第一頁：
+先讀 issue 原有 labels，保存 label_preexisting。列出所有 repo labels，避免只查第一頁；GitHub label 名稱不分大小寫，核對時也不分大小寫。若已有 In Progress 等同名 label，下列指令的 "in progress" 一律換成它的實際名稱：
 
 ~~~text
 gh api --hostname HOST --paginate repos/OWNER/REPO/labels
 ~~~
 
-**只有名稱不存在時**才建立。遇到同時被他人建立的錯誤，重新讀取確認，再繼續，不使用 --force 覆寫：
+**只有不分大小寫比對後仍不存在時**才建立。遇到同時被他人建立的錯誤，重新讀取確認，再繼續，不使用 --force 覆寫：
 
 ~~~text
 gh label create "in progress" --repo HOST/OWNER/REPO --color "FBCA04" --description "Issue investigation or implementation is in progress"
@@ -48,12 +48,14 @@ gh issue view NUMBER --repo HOST/OWNER/REPO --json labels
 
 ## Worktree、commit 與 push
 
-REMOTE 是核對 URL 後的 remote 名稱，BASE 是明確指定或 API 查得的目標分支，BRANCH 是本任務分支，WORKTREE 是新的絕對路徑。在正確 repo 執行：
+REMOTE 是核對 URL 後的 remote 名稱，BASE 是明確指定或 API 查得的目標分支，BRANCH 是本任務分支，WORKTREE 是新的絕對路徑。PUSH_REMOTE 是推送修正分支的 remote：對目標 repo 有寫入權限時就是 REMOTE，否則是已核對屬於目前帳號的 fork remote。HEAD_OWNER 是 PUSH_REMOTE 所屬的 owner；同 repo 時就是 OWNER。在正確 repo 執行：
 
 ~~~text
 git fetch REMOTE
-git worktree add -b BRANCH WORKTREE REMOTE/BASE
+git worktree add --no-track -b BRANCH WORKTREE REMOTE/BASE
 ~~~
+
+--no-track 避免新分支把 REMOTE/BASE 當成 upstream；首次 push 時才以 --set-upstream 設定。
 
 之後把每個 shell 操作的工作目錄設定為 WORKTREE。讀取該分支下適用的 repo 規範。在恢復既有任務時核對 branch ownership，不重新建立 worktree。私人 repo 內容不可推送到不同或可見性更寬的 repo。
 

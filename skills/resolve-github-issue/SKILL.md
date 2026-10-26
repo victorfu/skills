@@ -27,8 +27,8 @@ description: 僅在使用者明確叫用 resolve-github-issue 時，驗證指定
 
 1. 驗證 URL 是 HTTPS 的 GitHub issue 路徑：host/owner/repo/issues/正整數。去除 query 與 fragment，拒絕含憑證、可疑 host、非 issue 路徑；GitHub Enterprise host 必須與使用者指定且已設定的 GitHub host 一致。讀取 API 結果後再次核對 canonical repo、issue number 與 URL，不能把 pull request 當成 issue。
 2. 讀取 issue 標題、完整內文、open/closed 與原有 labels。先讀已知適用的 repo 規範。若 issue 已關閉，先查明原因並回報，不重開或加進度標籤；只有使用者明確要求繼續時才處理。
-3. 在深入驗證／修改程式碼**之前**，對已確認的 open issue 加上名稱為 **in progress** 的 label。若 repo 尚無該 label，可建立該 label 再加入；不重命名或覆寫其他 labels，不把 issue 的 open/closed state 改成 in progress。
-4. 記錄 label 原本是否存在及本次是否新增。已存在就不重複加入；加入後重新讀取確認成功。若寫入失敗，可完成唯讀調查，但在進度標記成功或使用者明確允許略過前，不進入程式碼修正。
+3. 在深入驗證／修改程式碼**之前**，對已確認的 open issue 加上名稱為 **in progress** 的 label。GitHub label 名稱不分大小寫；已有 In Progress 等同名 label 時沿用其實際名稱。若 repo 尚無該 label，可建立該 label 再加入；不重命名或覆寫其他 labels，不把 issue 的 open/closed state 改成 in progress。
+4. 記錄 label 原本是否存在及本次是否新增。已存在就不重複加入；加入後重新讀取確認成功。若是帳號對該 repo 沒有 triage／write 權限而無法加入（常見於透過 fork 貢獻上游），記錄原因、略過標記並繼續，在最後回覆說明。其他寫入失敗時可完成唯讀調查，但在進度標記成功或使用者明確允許略過前，不進入程式碼修正。
 5. 在任務紀錄保存 canonical issue URL、repo、原始 labels、本次 label 變更、目前階段；後續補上 base SHA、worktree 路徑、分支、驗證結果、commit SHA、PR URL。恢復任務時先核對這些資訊與 GitHub／git 現況，不重新從頭製造副作用。
 
 ## 2. 根據證據判定有效性與合理性

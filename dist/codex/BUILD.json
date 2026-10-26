@@ -4,8 +4,8 @@
   "version": "0.1.0",
   "platform": "codex",
   "sha256": {
-    "skills/resolve-github-issue/SKILL.md": "df946bcc879e7d384ce8f28447741698b346665a41f4e7e252fa28bc536f28ad",
+    "skills/resolve-github-issue/SKILL.md": "3ea02d7f6baf139325a614a98d7ecf8c1f56c53b5c4050586756112317747d0c",
     "skills/resolve-github-issue/agents/openai.yaml": "18422d6f1809f5381640f55d92ccb10ae4dba54f9597fa8b700debe419c64def",
-    "skills/resolve-github-issue/references/github-workflow.md": "fc91799b4518bbff53181535a8a685c456daf4c82187cf11a3bfad946359a398"
+    "skills/resolve-github-issue/references/github-workflow.md": "c564134f8bada628b566bad0d0c7a87c16fd2df91a5add401310b62c60b69c1c"
   }
 }
