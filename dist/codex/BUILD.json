@@ -1,7 +1,7 @@
 {
   "generated": true,
   "source": "skills/",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "platform": "codex",
   "sha256": {
     "skills/resolve-github-issue/SKILL.md": "9b134ceae30dc7fb0697c28c6c6823ddda145c781426ab2599a714750f41a0c9",
