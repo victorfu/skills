@@ -1,52 +1,52 @@
-# 參與開發
+# Contributing
 
-## 專案結構
+## Project layout
 
 ```text
-skills/<name>/                     唯一手寫的來源
-  SKILL.md                         frontmatter 只放 name、description，正文是完整流程
-  references/                      skill 引用的參考文件
-  agents/openai.yaml               Codex 專用的顯示名稱與叫用政策
-release.json                       版本與 plugin metadata（name 為穩定 ID，displayName 為顯示名稱）
-assets/icon.svg                    Codex plugin 圖示原稿；icon.png（512）與 logo.png（1024）由它輸出
-tools/build.py                     產生 dist/ 與兩份 marketplace；--check 只比對不寫入
-tools/test_build.py                打包回歸測試（在暫存目錄執行）
-dist/claude/、dist/codex/          產生的 plugin（要 commit，不要手改）
-.claude-plugin/marketplace.json    產生的 Claude Code marketplace
-.agents/plugins/marketplace.json   產生的 Codex marketplace
-docs/verification.md               查證與驗證紀錄
+skills/<name>/                     The only hand-written source
+  SKILL.md                         Frontmatter holds only name and description; the body is the full workflow
+  references/                      Reference docs the skill links to
+  agents/openai.yaml               Codex-only display name and invocation policy
+release.json                       Version and plugin metadata (name is the stable ID, displayName the display name)
+assets/icon.svg                    Source for the Codex plugin icon; icon.png (512) and logo.png (1024) are exported from it
+tools/build.py                     Generates dist/ and both marketplaces; --check compares without writing
+tools/test_build.py                Packaging regression tests (run in a temporary directory)
+dist/claude/, dist/codex/          Generated plugins (commit them; do not edit by hand)
+.claude-plugin/marketplace.json    Generated Claude Code marketplace
+.agents/plugins/marketplace.json   Generated Codex marketplace
+docs/verification.md               Research and verification notes
 ```
 
-兩個平台的產物只有兩處不同：
+The two platforms' outputs differ in only two places:
 
-- **Claude Code**：`SKILL.md` frontmatter 多一行 `disable-model-invocation: true`，並且不含 `agents/`。
-- **Codex**：以 `agents/openai.yaml` 的 `policy.allow_implicit_invocation: false` 限制只能明確叫用。
+- **Claude Code**: the `SKILL.md` frontmatter gets an extra `disable-model-invocation: true` line, and `agents/` is left out.
+- **Codex**: `policy.allow_implicit_invocation: false` in `agents/openai.yaml` restricts the skill to explicit invocation.
 
-正文與 references 在兩邊位元組一致。`skills/` 下以 `.` 開頭的檔案（例如 `.DS_Store`）不會被打包。
+The body and references are byte-identical on both sides. Files under `skills/` whose names start with `.` (such as `.DS_Store`) are not packaged.
 
-## 環境設定
+## Setup
 
-需要 Git 與 Python 3.10 以上。
+You need Git and Python 3.10 or later.
 
-macOS／Linux：
+macOS/Linux:
 
 ```sh
 python3 -m venv .venv
 .venv/bin/python -m pip install -r requirements-dev.txt
 ```
 
-Windows PowerShell（不需啟用 venv）：
+Windows PowerShell (no need to activate the venv):
 
 ```powershell
 py -3 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
 ```
 
-以下指令以 macOS／Linux 為例；Windows 請把 `.venv/bin/python` 換成 `.\.venv\Scripts\python.exe`。
+The commands below use macOS/Linux paths; on Windows, replace `.venv/bin/python` with `.\.venv\Scripts\python.exe`.
 
-## 建置與測試
+## Building and testing
 
-每次修改 `skills/`、`assets/`、`release.json` 或 `tools/` 後：
+After every change to `skills/`, `assets/`, `release.json` or `tools/`:
 
 ```sh
 .venv/bin/python tools/build.py
@@ -56,48 +56,48 @@ claude plugin validate dist/claude --strict
 claude plugin validate .claude-plugin/marketplace.json --strict
 ```
 
-`build.py` 會移除 `dist/` 中不再需要的檔案，不要把其他檔案放進 `dist/`。CI 會在 Ubuntu、macOS、Windows 搭配 Python 3.10 與 3.12 執行 `--check` 與單元測試，產物沒有重新建置就會失敗。
+`build.py` removes files from `dist/` that are no longer needed, so do not put other files in `dist/`. CI runs `--check` and the unit tests on Ubuntu, macOS and Windows with Python 3.10 and 3.12, and fails if the outputs were not rebuilt.
 
-## 本機試用
+## Trying it locally
 
-建議在一個暫存的測試專案中試用，避免和你平常的安裝混在一起。需要完全隔離設定時，可以把 `CLAUDE_CONFIG_DIR` 指向新的目錄（可能需要重新登入）。
+Try it in a throwaway test project so it does not mix with your regular installation. If you need fully isolated settings, point `CLAUDE_CONFIG_DIR` at a new directory (you may need to sign in again).
 
-**Claude Code**：直接載入產生的 plugin，只對該次 session 生效。
+**Claude Code**: load the generated plugin directly; it applies only to that session.
 
 ```sh
 claude --plugin-dir /absolute/path/to/skills/dist/claude
 ```
 
-叫用 `/victorfu-skills:resolve-github-issue`。修改來源後重新執行 `build.py`，再執行 `/reload-plugins` 或開新 session。
+Invoke `/victorfu-skills:resolve-github-issue`. After changing the source, run `build.py` again, then run `/reload-plugins` or start a new session.
 
-**Codex**：從本機路徑註冊 marketplace 並安裝。
+**Codex**: register the marketplace from the local path and install.
 
 ```sh
 codex plugin marketplace add /absolute/path/to/skills
 codex plugin add victorfu-skills@victorfu-skills
 ```
 
-Codex 會把 plugin 複製到自己的 cache，修改來源後要重新安裝，並重新啟動 Codex。
+Codex copies the plugin into its own cache, so after changing the source you need to reinstall and restart Codex.
 
-用真實 issue 測試前，先用「只評估，不要修改」的唯讀模式確認行為；完整流程請在可以隨意建立分支與 PR 的測試 repo 上進行。
+Before testing against real issues, use read-only mode ("assess only, don't change anything") to confirm the behavior; run the full workflow in a test repo where you can freely create branches and PRs.
 
-## 新增 skill
+## Adding a skill
 
-1. 建立 `skills/<name>/SKILL.md`，frontmatter 只能有 `name`（必須等於目錄名稱，小寫加連字號）與 `description`。
-2. 建立 `skills/<name>/agents/openai.yaml`，設定 `interface.display_name`、`short_description`（25 到 64 字）、包含 `$<plugin-name>:<name>` 的 `default_prompt`，以及 `policy.allow_implicit_invocation: false`。`<plugin-name>` 必須與 `release.json` 的 `name` 相同；本 repo 使用 `$victorfu-skills:<name>`，建置會檢查完整叫用名稱。
-3. `SKILL.md` 正文中的相對連結必須指向 skill 目錄內實際存在的檔案。
-4. 執行建置與測試；`build.py` 會自動納入 `skills/` 下的所有 skill。
+1. Create `skills/<name>/SKILL.md`. Its frontmatter may contain only `name` (must equal the directory name, lowercase with hyphens) and `description`.
+2. Create `skills/<name>/agents/openai.yaml` with `interface.display_name`, `short_description` (25 to 64 characters), a `default_prompt` containing `$<plugin-name>:<name>`, and `policy.allow_implicit_invocation: false`. `<plugin-name>` must match `name` in `release.json`; this repo uses `$victorfu-skills:<name>`, and the build checks the full invocation name.
+3. Relative links in the `SKILL.md` body must point to files that actually exist inside the skill directory.
+4. Run the build and tests; `build.py` picks up every skill under `skills/` automatically.
 
-## 發布新版本
+## Releasing a new version
 
-1. 更新 `release.json` 的 `version`（SemVer，例如 `0.1.1`）。Claude Code 只有在版本號改變時才會更新已安裝的 plugin，所以每次發布都要升版。
-2. 執行建置與測試，確認 `--check` 通過。
-3. Commit 所有變更（包含 `dist/` 與兩份 marketplace），push 並等 CI 通過。
-4. 在該 commit 建立 tag 並 push：
+1. Update `version` in `release.json` (SemVer, for example `0.1.1`). Claude Code only updates an installed plugin when the version number changes, so bump it on every release.
+2. Run the build and tests, and confirm `--check` passes.
+3. Commit all changes (including `dist/` and both marketplaces), push, and wait for CI to pass.
+4. Create a tag on that commit and push it:
 
    ```sh
    git tag -a v0.1.1 -m "victorfu-skills 0.1.1"
    git push origin v0.1.1
    ```
 
-不要移動已發布的 tag，也不要用同一個版本號發布不同內容。
+Never move a published tag, and never release different content under the same version number.

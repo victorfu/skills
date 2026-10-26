@@ -133,4 +133,4 @@ codex plugin marketplace remove victorfu-skills
 
 ## 參與開發
 
-`skills/` 是唯一的手寫來源，`dist/` 與兩份 marketplace 檔案由 `tools/build.py` 產生。建置、測試、本機試用與發布流程見 [CONTRIBUTING.md](CONTRIBUTING.md)。
+`skills/` 是唯一的手寫來源，`dist/` 與兩份 marketplace 檔案由 `tools/build.py` 產生。建置、測試、本機試用與發布流程見 [CONTRIBUTING.md](CONTRIBUTING.md)（英文）。
