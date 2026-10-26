@@ -1,0 +1,11 @@
+{
+  "generated": true,
+  "source": "skills/",
+  "version": "0.1.0",
+  "platform": "codex",
+  "sha256": {
+    "skills/resolve-github-issue/SKILL.md": "df946bcc879e7d384ce8f28447741698b346665a41f4e7e252fa28bc536f28ad",
+    "skills/resolve-github-issue/agents/openai.yaml": "18422d6f1809f5381640f55d92ccb10ae4dba54f9597fa8b700debe419c64def",
+    "skills/resolve-github-issue/references/github-workflow.md": "fc91799b4518bbff53181535a8a685c456daf4c82187cf11a3bfad946359a398"
+  }
+}

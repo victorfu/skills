@@ -1,0 +1,16 @@
+{
+  "name": "victorfu-skills",
+  "owner": {
+    "name": "Victor"
+  },
+  "metadata": {
+    "description": "共用的開發工作流程 skills；各 skill 僅依其明確叫用契約執行。"
+  },
+  "plugins": [
+    {
+      "name": "victorfu-skills",
+      "source": "./dist/claude",
+      "description": "共用的開發工作流程 skills；各 skill 僅依其明確叫用契約執行。"
+    }
+  ]
+}

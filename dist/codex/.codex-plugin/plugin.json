@@ -1,0 +1,14 @@
+{
+  "name": "victorfu-skills",
+  "version": "0.1.0",
+  "description": "共用的開發工作流程 skills；各 skill 僅依其明確叫用契約執行。",
+  "author": {
+    "name": "Victor"
+  },
+  "repository": "https://github.com/victorfu/skills",
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "victorfu-skills",
+    "shortDescription": "共用的開發工作流程 skills；各 skill 僅依其明確叫用契約執行。"
+  }
+}

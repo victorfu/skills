@@ -1,0 +1,4 @@
+* text=auto eol=lf
+# Preserve the original shared reference bytes, including its final CRLF.
+skills/*/references/github-workflow.md -text
+dist/*/skills/*/references/github-workflow.md -text
