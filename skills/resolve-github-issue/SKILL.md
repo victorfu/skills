@@ -87,7 +87,7 @@ description: 僅在使用者明確叫用 resolve-github-issue 時，驗證指定
 6. 完成檢查後直接建立一般 PR（ready for review），明確指定正確 base 與 head。只在使用者或 repo 明確要求時使用 draft。
 7. PR 若完整修復同 repo 的 issue 且目標為 default branch，加入 Closes #<number>；不同 repo 使用 Closes owner/repo#<number>。只處理部分內容或目標為其他 branch 時，用 Refs 與完整 issue URL，說明剩餘範圍，不誤稱自動關閉。
 8. 重新讀取 PR，確認 URL、base、head、head SHA、OPEN 狀態及 body；確認遠端 head SHA 與本地最終 commit 一致。可取得 CI 狀態時回報實況；剛建 PR 的 pending CI 不等於通過。若已發現與修正相關的 CI 失敗，修正並重新驗證後更新同一 PR，不建立第二個 PR。
-9. 建立 PR 後不自動合併，不另外發布留言、要求特定人審查或改 issue 的 open/closed state。
+9. 建立 PR 後不自動合併，不自行開啟 auto-fix 或其他 PR 監看，不另外發布留言、要求特定人審查或改 issue 的 open/closed state。
 
 ## 進度標籤收尾與失敗恢復
 
@@ -101,3 +101,10 @@ description: 僅在使用者明確叫用 resolve-github-issue 時，驗證指定
 ## 最後回覆
 
 用使用者語言簡潔交付：判定及主要證據、修正摘要、實際測試與審查結果、commit SHA、PR URL、最終進度標籤狀態及仍待處理事項。沒有產生 commit／PR 就明確說明原因，不製造成功連結。
+
+成功建立 PR 時，最後附上開啟 PR auto-fix 的方式，只提示、不代為開啟，並說明 auto-fix 之後推送的 commit 不會經過本流程的測試與審查。依使用者目前的客戶端提示對應方式，無法判斷時全部列出：
+
+- Claude Code desktop：PR 旁 ⋮ 選單中的 Auto-fix。
+- Claude Code 網頁／手機：PR 的 Auto-fix 開關，或請 Claude 監看這個 PR。
+- Claude Code CLI：執行 `/autofix-pr`；它會建立雲端 session，需要 repo 已安裝 Claude GitHub App。
+- Codex：在 PR 的 Checks 選 Fix，每次手動送出；或在 GitHub 的 PR 留言 `@codex fix the CI failures`，需要 repo 已連接 Codex。

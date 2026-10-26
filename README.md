@@ -93,6 +93,8 @@ $victorfu-skills:resolve-github-issue https://github.com/OWNER/REPO/issues/123
 
 它**不會**：merge PR、關閉或重開 issue、在 issue 留言、force push，或直接 push 到 default branch。
 
+它也不會自行開啟 PR 的 auto-fix；PR 建立後，會依你使用的客戶端告訴你怎麼開。
+
 ## 更新
 
 ```sh
