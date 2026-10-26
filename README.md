@@ -6,8 +6,6 @@
 | --- | --- |
 | `resolve-github-issue` | 給它一個 GitHub issue，它會先驗證問題是否成立，再修正、測試、審查，最後開 PR。 |
 
-> 目前版本 `0.1.0`，仍在早期階段。Skill 內容以繁體中文撰寫，回覆會跟隨你使用的語言。
-
 ## 需求
 
 - Claude Code 或 Codex（CLI 或 desktop 皆可）
