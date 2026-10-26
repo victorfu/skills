@@ -51,7 +51,7 @@ class BuildTests(unittest.TestCase):
         self.assertTrue((self.root / 'dist/codex/skills/resolve-github-issue/agents/openai.yaml').is_file())
         self.assertFalse((self.root / 'dist/claude/skills/resolve-github-issue/agents').exists())
 
-    def test_codex_icons_are_shipped_and_referenced(self):
+    def test_icons_are_shipped_and_referenced(self):
         self.run_build()
         package = self.root / 'dist/codex'
         interface = json.loads((package / '.codex-plugin/plugin.json').read_text(encoding='utf-8'))['interface']
@@ -59,7 +59,10 @@ class BuildTests(unittest.TestCase):
         for field, image in build.CODEX_ICONS.items():
             self.assertEqual(interface[field], f'./assets/{image}')
             self.assertEqual((package / 'assets' / image).read_bytes(), (self.root / 'assets' / image).read_bytes())
-        self.assertFalse((self.root / 'dist/claude/assets').exists())
+        claude = self.root / 'dist/claude'
+        manifest = json.loads((claude / '.claude-plugin/plugin.json').read_text(encoding='utf-8'))
+        self.assertEqual(manifest['icon'], f'./assets/{build.CLAUDE_ICON}')
+        self.assertEqual((claude / 'assets' / build.CLAUDE_ICON).read_bytes(), (self.root / 'assets' / build.CLAUDE_ICON).read_bytes())
 
     def test_reject_missing_icon(self):
         (self.root / 'assets/icon.png').unlink()

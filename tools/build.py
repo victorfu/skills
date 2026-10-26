@@ -13,9 +13,11 @@ ROOT = Path(__file__).resolve().parents[1]
 PLATFORMS = ('codex', 'claude')
 # Codex reads agents/openai.yaml; Claude has no use for it.
 CODEX_ONLY = 'agents'
-# Codex plugin card branding; images are copied from assets/ into dist/codex/assets/.
+# Plugin branding; images are copied from assets/ into dist/<platform>/assets/.
 BRAND_COLOR = '#238636'
 CODEX_ICONS = {'composerIcon': 'icon.png', 'logo': 'logo.png'}
+# Claude accepts one square PNG/JPEG of 512-2048 px.
+CLAUDE_ICON = 'icon.png'
 
 
 def require(condition, message):
@@ -44,6 +46,13 @@ def frontmatter(data):
 def hidden(path, base):
     # Skips OS/editor clutter such as .DS_Store anywhere below base.
     return any(part.startswith('.') for part in path.relative_to(base).parts)
+
+
+def ship_icon(output, platform, image):
+    source = ROOT / 'assets' / image
+    require(source.is_file() and not source.is_symlink(), f'Missing icon: assets/{image}')
+    output[f'dist/{platform}/assets/{image}'] = source.read_bytes()
+    return f'./assets/{image}'
 
 
 def expected_files():
@@ -93,11 +102,10 @@ def expected_files():
         if platform == 'codex':
             interface = {'displayName': release['name'], 'shortDescription': release['description'], 'brandColor': BRAND_COLOR}
             for field, image in CODEX_ICONS.items():
-                source = ROOT / 'assets' / image
-                require(source.is_file() and not source.is_symlink(), f'Missing icon: assets/{image}')
-                output[f'dist/codex/assets/{image}'] = source.read_bytes()
-                interface[field] = f'./assets/{image}'
+                interface[field] = ship_icon(output, platform, image)
             manifest.update(skills='./skills/', interface=interface)
+        else:
+            manifest['icon'] = ship_icon(output, platform, CLAUDE_ICON)
         # Claude scans its standard skills/ directory without an extra path.
         output[f'dist/{platform}/.{platform}-plugin/plugin.json'] = json_bytes(manifest)
         # Hashes cover the shipped bytes, so installed files can be compared directly.
