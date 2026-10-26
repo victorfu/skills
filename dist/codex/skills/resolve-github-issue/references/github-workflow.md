@@ -1,12 +1,12 @@
-# GitHub 操作參考
+# GitHub operations reference
 
-適用於沒有合適 connector 時，以 gh 與 git 完成流程。下列大寫代號是待替換的已核對參數，不能直接照貼；每個有依賴的命令都先檢查前一步結果。
+Use this when no suitable connector is available and the workflow runs through gh and git. The uppercase placeholders below are verified parameters to substitute, not text to paste as is; check the previous step's result before every dependent command.
 
-## URL 與 repo 身分
+## URL and repo identity
 
-解析 HTTPS URL 的 host、owner、repo 與 issue number，拒絕 username/password、非預期 port、控制字元、dot segments、URL 編碼的路徑分隔符與非 issues 路徑。只接受 github.com；Enterprise 須使用者明確指定且 gh 已設定該 host。忽略 query／fragment 後重新組合 canonical URL。不要把原始 URL、issue 內容、標題當 shell 程式碼。
+Parse the HTTPS URL's host, owner, repo and issue number; reject username/password, unexpected ports, control characters, dot segments, URL-encoded path separators and non-issues paths. Accept only github.com; Enterprise must be explicitly specified by the user and configured in gh for that host. Ignore query/fragment and rebuild the canonical URL. Never treat the raw URL, issue content or title as shell code.
 
-gh 的 --repo 使用 HOST/OWNER/REPO，避免目前工作目錄或 GH_HOST 指向別處。gh api 使用 --hostname HOST。GitHub REST 的 issue 回應若包含 pull_request 欄位，就是 PR，應停止此 issue 流程。若 repo 轉移導致 canonical URL 改變，重新核對後再進行任何寫入。
+For gh, pass --repo as HOST/OWNER/REPO so the current working directory or GH_HOST cannot point elsewhere. For gh api, use --hostname HOST. If the GitHub REST issue response includes a pull_request field, it is a PR; stop this issue workflow. If a repo transfer changes the canonical URL, re-verify before any write.
 
 ~~~text
 gh auth status --hostname HOST
@@ -19,17 +19,17 @@ git status --short
 git remote -v
 ~~~
 
-最後兩個 API 需解析所有頁面，不因第一頁沒有證據就認定不存在。重複 issue／PR 檢查需讀實際內容與分支 diff；文字提及不是修復證據。不輸出 auth token、含 token 的 remote URL 或私密設定。
+Parse every page of the last two APIs; do not conclude evidence is absent because the first page lacks it. Duplicate issue/PR checks must read the actual content and branch diff; a text mention is not evidence of a fix. Never print auth tokens, remote URLs containing tokens or private settings.
 
-## in progress 標籤
+## The in progress label
 
-先讀 issue 原有 labels，保存 label_preexisting。列出所有 repo labels，避免只查第一頁；GitHub label 名稱不分大小寫，核對時也不分大小寫。若已有 In Progress 等同名 label，下列指令的 "in progress" 一律換成它的實際名稱：
+First read the issue's existing labels and save label_preexisting. List all repo labels rather than only the first page; GitHub label names are case-insensitive, so compare case-insensitively too. If a label such as In Progress already exists, replace "in progress" in the commands below with its actual name:
 
 ~~~text
 gh api --hostname HOST --paginate repos/OWNER/REPO/labels
 ~~~
 
-**只有不分大小寫比對後仍不存在時**才建立。遇到同時被他人建立的錯誤，重新讀取確認，再繼續，不使用 --force 覆寫：
+Create it **only if it still does not exist after the case-insensitive comparison**. If you hit an error because someone else created it at the same time, re-read to confirm and then continue; do not overwrite with --force:
 
 ~~~text
 gh label create "in progress" --repo HOST/OWNER/REPO --color "FBCA04" --description "Issue investigation or implementation is in progress"
@@ -37,27 +37,27 @@ gh issue edit NUMBER --repo HOST/OWNER/REPO --add-label "in progress"
 gh issue view NUMBER --repo HOST/OWNER/REPO --json labels
 ~~~
 
-只在確認本次新增後記錄 label_added_by_this_run。發生網路錯誤時先讀狀態再判定。中止且未建 PR 時，只有本次新增的 label 才執行：
+Record label_added_by_this_run only after confirming this run added it. On network errors, read the state before deciding. When stopping without a PR, run the following only for a label this run added:
 
 ~~~text
 gh issue edit NUMBER --repo HOST/OWNER/REPO --remove-label "in progress"
 gh issue view NUMBER --repo HOST/OWNER/REPO --json labels
 ~~~
 
-不以 gh issue edit --add-project 代替 label；那不會把 Projects 的 Status 欄位設為 In Progress。若使用者改用 Projects，需讀取指定 project 的 item、Status field、single-select options 的真實 ID，僅更新指定 item 並重新確認，不猜 ID 或同時修改其他 projects。
+Do not substitute gh issue edit --add-project for the label; that does not set the Projects Status field to In Progress. If the user switches to Projects, read the real IDs of the specified project's item, Status field and single-select options, update only the specified item and re-confirm; never guess IDs or modify other projects at the same time.
 
-## Worktree、commit 與 push
+## Worktree, commit and push
 
-REMOTE 是核對 URL 後的 remote 名稱，BASE 是明確指定或 API 查得的目標分支，BRANCH 是本任務分支，WORKTREE 是新的絕對路徑。PUSH_REMOTE 是推送修正分支的 remote：對目標 repo 有寫入權限時就是 REMOTE，否則是已核對屬於目前帳號的 fork remote。HEAD_OWNER 是 PUSH_REMOTE 所屬的 owner；同 repo 時就是 OWNER。在正確 repo 執行：
+REMOTE is the remote name after verifying its URL, BASE is the explicitly specified or API-derived target branch, BRANCH is this task's branch and WORKTREE is a new absolute path. PUSH_REMOTE is the remote the fix branch is pushed to: REMOTE when you have write access to the target repo, otherwise a verified fork remote owned by the current account. HEAD_OWNER is the owner of PUSH_REMOTE; for the same repo it is OWNER. Run in the correct repo:
 
 ~~~text
 git fetch REMOTE
 git worktree add --no-track -b BRANCH WORKTREE REMOTE/BASE
 ~~~
 
---no-track 避免新分支把 REMOTE/BASE 當成 upstream；首次 push 時才以 --set-upstream 設定。
+--no-track keeps the new branch from using REMOTE/BASE as its upstream; set the upstream with --set-upstream on the first push.
 
-之後把每個 shell 操作的工作目錄設定為 WORKTREE。讀取該分支下適用的 repo 規範。在恢復既有任務時核對 branch ownership，不重新建立 worktree。私人 repo 內容不可推送到不同或可見性更寬的 repo。
+From then on, set the working directory of every shell operation to WORKTREE. Read the repo guidelines that apply on that branch. When resuming an existing task, verify branch ownership and do not recreate the worktree. Never push private repo content to a different repo or one with wider visibility.
 
 ~~~text
 git diff --check
@@ -72,17 +72,17 @@ git show --stat --oneline HEAD
 git push --set-upstream PUSH_REMOTE BRANCH
 ~~~
 
-上面省略的驗證與審查必須依 SKILL.md 在 commit 前完成。PATH1、PATH2 必須是實際審查過的檔案；需要刪除或移動時遵守目前環境的檔案權限。不要用自動 stash、reset --hard、git clean、--no-verify 或 force push 清除障礙。
+The verification and review omitted above must be completed before the commit, as SKILL.md describes. PATH1 and PATH2 must be files that were actually reviewed; for deletions or moves, respect the current environment's file permissions. Never use auto-stash, reset --hard, git clean, --no-verify or force push to clear obstacles.
 
-## PR 與不確定結果恢復
+## PRs and recovering from uncertain results
 
-PR 的 repo 永遠明確指定為 issue 的目標 repo；fork 使用已驗證的 HEAD_OWNER:BRANCH 指定 head。查詢既有 PR 時以 head/base 限縮後，再核對 headRepository、headRepositoryOwner 與 headRefOid，不只比對分支名稱。gh pr list 預設最多 30 筆；結果達上限時增加 limit 或用分頁 API 確認，不能把截斷結果當完整清單。核對 OPEN／MERGED／CLOSED 狀態後，依 SKILL.md 決定恢復方式。
+Always specify the PR's repo explicitly as the issue's target repo; for forks, specify head as the verified HEAD_OWNER:BRANCH. When looking for existing PRs, narrow by head/base and then check headRepository, headRepositoryOwner and headRefOid, not just the branch name. gh pr list returns at most 30 results by default; when results hit the limit, raise the limit or use the paginated API to confirm, and never treat a truncated result as the full list. After checking the OPEN/MERGED/CLOSED state, decide how to resume according to SKILL.md.
 
 ~~~text
 gh pr list --repo HOST/OWNER/REPO --state all --head BRANCH --base BASE --json number,url,state,headRefName,headRefOid,headRepository,headRepositoryOwner,baseRefName
 ~~~
 
-寫入 PR 內文至 UTF-8 的暫存 Markdown 檔，放在 tracked source 之外；使用檔案工具或安全的字面字串寫入，不把 Markdown 直接插入 shell。遵循 repo 的 PR template，必要內容包括問題證據、修正、測試及 review 結果。PR title 也須安全傳參，不使用 eval、Invoke-Expression 或組字串再交另一層 shell 執行。
+Write the PR body to a UTF-8 temporary Markdown file outside tracked sources, using a file tool or a safe literal string; never interpolate Markdown directly into the shell. Follow the repo's PR template; required content includes the problem evidence, the fix, tests and review results. Pass the PR title safely as well; never use eval, Invoke-Expression or build a string to hand to another shell layer.
 
 ~~~text
 gh pr create --repo HOST/OWNER/REPO --base BASE --head HEAD_OWNER:BRANCH --title "PR_TITLE" --body-file BODY_FILE
@@ -90,14 +90,14 @@ gh pr view PR_NUMBER --repo HOST/OWNER/REPO --json url,state,isDraft,baseRefName
 gh pr checks PR_NUMBER --repo HOST/OWNER/REPO
 ~~~
 
-一般同 repo PR 也可明確使用 BRANCH 作 head。若 fork owner 語法不被目前 CLI 支援，查核 CLI／官方支援方式，不能默默改推到別的 repo。
+A regular same-repo PR may also use BRANCH as head explicitly. If the current CLI does not support the fork owner syntax, look up the CLI's officially supported way; never silently push to a different repo.
 
-gh pr create 若逾時或回應遺失，先依精確 head repo／branch 與 base 找是否已建立；存在則讀取該 PR，不再次 create。git push 若回應遺失，以 git ls-remote PUSH_REMOTE refs/heads/BRANCH 比對本地 SHA。gh pr checks 尚無檢查或 pending 要記錄為未完成，不能報告全數通過；不以無限等待阻止交付，除非使用者或 repo 必須等 CI。
+If gh pr create times out or its response is lost, first look for an existing PR by the exact head repo/branch and base; if one exists, read it and do not create again. If the git push response is lost, compare git ls-remote PUSH_REMOTE refs/heads/BRANCH against the local SHA. When gh pr checks has no checks yet or they are pending, record them as incomplete; never report everything as passing. Do not block delivery by waiting indefinitely, unless the user or repo requires waiting for CI.
 
-## 官方依據
+## Official sources
 
-- [GitHub CLI：修改 issue labels](https://cli.github.com/manual/gh_issue_edit)
-- [GitHub CLI：建立 PR 與 body-file](https://cli.github.com/manual/gh_pr_create)
-- [GitHub：PR 與 issue 連結／關閉條件](https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/linking-a-pull-request-to-an-issue)
+- [GitHub CLI: editing issue labels](https://cli.github.com/manual/gh_issue_edit)
+- [GitHub CLI: creating PRs and body-file](https://cli.github.com/manual/gh_pr_create)
+- [GitHub: linking PRs to issues and closing conditions](https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/linking-a-pull-request-to-an-issue)
 
-若目前安裝版本不接受範例中的旗標，先讀該命令 --help，再調整，不能宣稱未成功的操作已完成。
+If the installed version does not accept a flag in the examples, read that command's --help first and adjust; never claim an unsuccessful operation succeeded.

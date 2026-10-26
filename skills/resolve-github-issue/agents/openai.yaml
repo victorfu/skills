@@ -1,6 +1,6 @@
 interface:
   display_name: "Resolve GitHub Issue"
-  short_description: "明確叫用後驗證 GitHub issue，修正、測試及審查，再提交 PR"
-  default_prompt: "使用 $victorfu-skills:resolve-github-issue 完整處理我提供的 issue 編號或網址，驗證後修正、測試、審查並提交 PR。"
+  short_description: "Verify a GitHub issue, then fix, test, review and open a PR"
+  default_prompt: "Use $victorfu-skills:resolve-github-issue to fully handle the issue number or URL I provide: verify it, then fix, test, review and open a PR."
 policy:
   allow_implicit_invocation: false
