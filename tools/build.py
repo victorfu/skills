@@ -64,7 +64,8 @@ def expected_files():
         require(ui['interface']['display_name'] == skill.name, 'Display name mismatch')
         require(25 <= len(ui['interface']['short_description']) <= 64, 'Invalid short description length')
         require(ui['policy']['allow_implicit_invocation'] is False, 'Explicit invocation required')
-        require('$' + skill.name in ui['interface']['default_prompt'], 'Missing invocation name')
+        invocation = f"${release['name']}:{skill.name}"
+        require(invocation in re.findall(r'\$[a-z0-9:-]+', ui['interface']['default_prompt']), 'Missing plugin-qualified invocation name')
         require('$ARGUMENTS' not in data.decode('utf-8'), 'Use the neutral input contract')
         for link in re.findall(r'\]\(([^)]+)\)', body):
             if '://' not in link and not link.startswith('#'):

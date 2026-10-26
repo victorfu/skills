@@ -98,6 +98,16 @@ class BuildTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'Explicit invocation'):
             self.run_build()
 
+    def test_reject_wrong_invocation_target(self):
+        path = self.root / 'skills/resolve-github-issue/agents/openai.yaml'
+        original = path.read_text(encoding='utf-8')
+        invocation = '$victorfu-skills:resolve-github-issue'
+        for target in ('$resolve-github-issue', '$other-plugin:resolve-github-issue', invocation + '-other'):
+            with self.subTest(target=target):
+                write_lf(path, original.replace(invocation, target))
+                with self.assertRaisesRegex(ValueError, 'Missing plugin-qualified invocation name'):
+                    self.run_build()
+
     def test_reject_empty_frontmatter(self):
         write_lf(self.root / 'skills/resolve-github-issue/SKILL.md', '---\n\n---\nbody\n')
         with self.assertRaisesRegex(ValueError, 'YAML mapping'):

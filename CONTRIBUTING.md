@@ -83,7 +83,7 @@ Codex 會把 plugin 複製到自己的 cache，修改來源後要重新安裝，
 ## 新增 skill
 
 1. 建立 `skills/<name>/SKILL.md`，frontmatter 只能有 `name`（必須等於目錄名稱，小寫加連字號）與 `description`。
-2. 建立 `skills/<name>/agents/openai.yaml`，設定 `interface.display_name`、`short_description`（25 到 64 字）、包含 `$<name>` 的 `default_prompt`，以及 `policy.allow_implicit_invocation: false`。
+2. 建立 `skills/<name>/agents/openai.yaml`，設定 `interface.display_name`、`short_description`（25 到 64 字）、包含 `$<plugin-name>:<name>` 的 `default_prompt`，以及 `policy.allow_implicit_invocation: false`。`<plugin-name>` 必須與 `release.json` 的 `name` 相同；本 repo 使用 `$victorfu-skills:<name>`，建置會檢查完整叫用名稱。
 3. `SKILL.md` 正文中的相對連結必須指向 skill 目錄內實際存在的檔案。
 4. 執行建置與測試；`build.py` 會自動納入 `skills/` 下的所有 skill。
 

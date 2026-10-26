@@ -153,3 +153,19 @@ Git fixture 起初採簡單 HTTP server：Codex 成功，但 Claude 的 shallow 
 - 已登入的權限／企業 managed settings／不同 CPU 架構，以及 Claude Desktop WSL plugins（官方目前不支援）。
 - 真實 GitHub tag 升版、回退、背景自動更新、正在執行中的 session reload：本輪僅測 GitHub 初次安裝及 loopback Git fixture 手動升版，不發布 tag／release。
 - `0.1.1` 是暫存測試版本，repo 的 `release.json` 與產物版本仍為 `0.1.0`。
+
+## Codex 登入後叫用驗證（2026-10-26）
+
+本輪補驗 Codex 的 plugin 叫用名稱，取代上一節對此項目的「未登入」限制；其他未測項目不變。
+
+- Codex CLI `0.164.0`；`codex login status` 確認使用既有 ChatGPT 登入。未讀出或複製 auth／API key。
+- 以單次 `-c` 指定本 repo 為 local marketplace，暫時安裝 `victorfu-skills@victorfu-skills` 的 `0.1.0` 產物。`skills/list` 回報 `errors=[]`、name=`victorfu-skills:resolve-github-issue`，且同時存在舊 plugin 的 `github-issue-to-pr:resolve-github-issue`，因此可核對實際選取的來源。
+- 在 repo 外的空白暫存目錄執行 `codex exec --ignore-user-config --ephemeral --skip-git-repo-check --sandbox read-only --json`，以單次設定啟用測試 plugin。送出 `$victorfu-skills:resolve-github-issue`，附上「只評估，不要修改」、issue `#123`、未提供 OWNER/REPO，以及禁止 GitHub 連線與其他 agent 的限制；未附上 skill 路徑或正文。
+- 程序 exit code 為 `0`，事件包含 `turn.completed`。模型搜尋 skill 後，實際讀取 `plugins/cache/victorfu-skills/victorfu-skills/0.1.0/skills/resolve-github-issue/SKILL.md`，並依輸入契約要求補上完整 issue URL 或 OWNER/REPO。事件中只有搜尋及讀檔命令，沒有 GitHub 操作或檔案修改。
+- 驗證後移除本次新增的 plugin；測試 cache 已移除，`~/.codex/config.toml` 的 SHA-256 與測試前完全相同。沒有改動既有舊 plugin。
+
+結論：本 plugin 的 README 與 `default_prompt` 統一使用 `$victorfu-skills:resolve-github-issue`。建置檢查要求完整的 plugin／skill 名稱，拒絕短寫法、錯誤 plugin 前綴及其他 skill 名稱；`dist/codex` 由來源重新產生。這次沒有比較所有短寫法的解析行為，也未測 GUI picker、隱式叫用禁止或完整 issue → PR 流程。
+
+修改後驗證：`build.py --check` 通過（13 個產物）、11 項打包單元測試通過（含錯誤叫用目標回歸測試）、skill-creator `quick_validate.py` 通過、`git diff --check` 通過。Claude plugin 與 marketplace 的 `--strict` manifest 驗證也通過；既有公共目錄上架用的 LICENSE／icon 提示仍在，不代表通過上架審核。
+
+官方參考：[App Server 的 skill 叫用與解析](https://learn.chatgpt.com/docs/app-server#skills)、[plugin 名稱與 namespace](https://developers.openai.com/plugins/build/plugins)。完整名稱的選定以上述登入後實測為依據。
