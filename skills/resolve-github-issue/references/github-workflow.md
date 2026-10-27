@@ -82,7 +82,7 @@ Always specify the PR's repo explicitly as the issue's target repo; for forks, s
 gh pr list --repo HOST/OWNER/REPO --state all --head BRANCH --base BASE --json number,url,state,headRefName,headRefOid,headRepository,headRepositoryOwner,baseRefName
 ~~~
 
-Write the PR body to a UTF-8 temporary Markdown file outside tracked sources, using a file tool or a safe literal string; never interpolate Markdown directly into the shell. Follow the repo's PR template; required content includes the problem evidence, the fix, tests and review results. Pass the PR title safely as well; never use eval, Invoke-Expression or build a string to hand to another shell layer.
+Write the PR body to a UTF-8 temporary Markdown file outside tracked sources, using a file tool or a safe literal string; never interpolate Markdown directly into the shell. Follow the repo's PR template; required content includes the problem evidence, the fix, the impact scope and how it was confirmed, tests and review results. Pass the PR title safely as well; never use eval, Invoke-Expression or build a string to hand to another shell layer.
 
 ~~~text
 gh pr create --repo HOST/OWNER/REPO --base BASE --head HEAD_OWNER:BRANCH --title "PR_TITLE" --body-file BODY_FILE

@@ -37,9 +37,9 @@ Verify the user's issue with evidence and deliver a fix. Reply in the user's lan
    - Impact: who is affected, what changes and how each is confirmed (section 3).
    - Verification: commands actually run and their results, plus anything left unverified.
    - Review: scope, findings and limitations (section 4).
-   - Delivery: commit SHA and PR URL.
+   - Delivery: commit SHA, PR URL and CI state.
 
-   The PR body and final reply are written from this record; do not claim anything it does not contain. When resuming, first reconcile this record with the current GitHub and git state rather than re-creating side effects from scratch.
+   The PR body and final reply are written from this record; do not report verification, review or delivery results the record does not contain. When resuming, first reconcile this record with the current GitHub and git state rather than re-creating side effects from scratch.
 
 ## 2. Judge validity and soundness from evidence
 
@@ -73,11 +73,11 @@ Pure feature proposals need clear requirements and acceptance criteria; do not t
 - Fetch the latest state of the confirmed remote target base. Prefer a separate worktree; if there is no matching local repo, clone the specified repo into a suitable new directory. Never fix in an unrelated repo.
 - By default, name branches by the kind of change: fix/issue-<number>-<short-slug> for bug fixes, feature/issue-<number>-<short-slug> for new features; repo or user rules take precedence. If a branch with the same name exists, check who owns it; reuse it only if you can confirm it belongs to this task, otherwise pick a non-conflicting name.
 - Before editing, write the Impact field of the task record by answering:
-  1. Who is affected: the callers, shared modules and data flows that reach the code you will change. Find them by searching, and record the search and what it found; never answer from memory.
+  1. Who is affected: the callers of the code you will change, the shared modules that use it, and the consumers of its outputs, side effects and persisted data. Find them by searching, and record the search and what it found; never answer from memory.
   2. What changes: inputs and outputs, error handling, persisted or wire formats, configuration and existing compatibility.
   3. How it is confirmed: map each affected item to a check that shows the original problem is fixed and the related behavior still holds, or mark it unverified.
 
-  Scale the answer to the change. If it stays inside internal code with no other callers, one line naming the search is enough. If it touches a public API, a shared module, a data or config format, error semantics or permissions, answer all three in full. If the impact reaches beyond the issue, keep the fix minimal; when containing it needs an undecided product trade-off, ask the user as in section 2.
+  Scale the answer to the change. If it stays inside internal code with no other callers, one line naming the search is enough; a docs-only change needs only one line saying so. If it touches a public API, a shared module, a data or config format, error semantics or permissions, answer all three in full. If the impact reaches beyond the issue, keep the fix minimal; when containing it needs an undecided product trade-off, ask the user as in section 2.
 - Fix the root cause, limited to the issue and what it necessarily touches. Do not refactor along the way, upgrade unrelated dependencies or copy the issue's suggested fix without judgment.
 - Add a regression check that identifies this defect. For program-logic bugs suited to automation, confirm the test fails before the fix and passes after. For docs or simple static fixes, use a fitting check; do not add hollow tests for form's sake.
 - Run the repo's required checks, the checks the Impact field calls for and the applicable tests, lint, type checks and builds for the affected area. Record only commands actually run and their results; mark missing environments, unrelated pre-existing failures and CI not yet run separately.
@@ -92,7 +92,7 @@ After tests pass, do one review separate from the implementation steps. Do not s
 - Check that the root cause is eliminated, plus edge inputs, error paths, compatibility, permissions, data consistency and any other behavior this change genuinely affects.
 - Confirm the diff has no unrelated files, secrets, test output, debug logs or assertions weakened to get green.
 - When you find a provable problem, fix it, re-run the relevant verification and review the final version again, until no substantive problems remain.
-- Keep the review scope, results and necessary limitations in the task record. Only a file state that has passed both tests and review may be committed; later changes invalidate the corresponding verification.
+- Fill the Review field of the task record. Only a file state that has passed both tests and review may be committed; later changes invalidate the corresponding verification.
 
 ## 5. Commit, push and open a PR
 
