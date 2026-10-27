@@ -4,7 +4,7 @@
   "version": "0.1.5",
   "platform": "claude",
   "sha256": {
-    "skills/resolve-github-issue/SKILL.md": "82539e15963e51ba9812c79f3f43d3287d569a7fb2d068c2fb4bbcaf31af6b86",
+    "skills/resolve-github-issue/SKILL.md": "e6d1750b4513dbba54e6b6c3e07b4db6b6eccd853ef7e3e2d98f9d243f9399bc",
     "skills/resolve-github-issue/references/github-workflow.md": "fcb09bbf6364b28f541bfedf8bba1d68c58ef5c46118775808f742fd32b8febe"
   }
 }

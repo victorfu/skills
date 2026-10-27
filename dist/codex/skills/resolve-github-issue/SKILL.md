@@ -29,11 +29,11 @@ Verify the user's issue with evidence and deliver a fix. Reply in the user's lan
 2. Read the issue title, full body, open/closed state and existing labels. Read the repo guidelines known to apply first. If the issue is closed, find out why and report it; do not reopen it or add the progress label. Continue only if the user explicitly asks.
 3. **Before** deeper verification or code changes, add a label named **in progress** to the confirmed open issue. GitHub label names are case-insensitive; if a label such as In Progress already exists, use its actual name. If the repo has no such label, you may create it and then add it. Do not rename or overwrite other labels, and do not change the issue's open/closed state to "in progress".
 4. Record whether the label already existed and whether this run added it. If it already exists, do not add it again; after adding, re-read to confirm success. If the account lacks triage/write permission on the repo (common when contributing upstream through a fork), record the reason, skip labeling and continue, and explain this in the final reply. For other write failures, you may finish the read-only investigation, but do not start code changes until the progress label succeeds or the user explicitly allows skipping it.
-5. Keep a task record and fill each field as its stage completes:
+5. Keep a task record and update each field as work progresses:
    - Target: canonical issue URL, repo, original labels, this run's label changes and the current stage.
    - Verdict: the verdict and its key evidence (section 2).
    - Workspace: base SHA, worktree path and branch.
-   - Impact: who is affected, what changes and how each is confirmed (section 3).
+   - Impact: who is affected, what changes, planned checks and references to their actual Verification results (section 3).
    - Verification: commands actually run and their results, plus anything left unverified.
    - Review: scope, findings and limitations (section 4).
    - Delivery: commit SHA, PR URL and CI state.
@@ -74,12 +74,12 @@ Pure feature proposals need clear requirements and acceptance criteria; do not t
 - Before editing, write the Impact field of the task record by answering:
   1. Who is affected: the callers of the code you will change, the shared modules that use it, and the consumers of its outputs, side effects and persisted data. Find them by searching, and record the search and what it found; never answer from memory.
   2. What changes: inputs and outputs, error handling, persisted or wire formats, configuration and existing compatibility.
-  3. How it is confirmed: map each affected item to a check that shows the original problem is fixed and the related behavior still holds, or mark it unverified.
+  3. How to check it: plan a regression check for the original problem and map each affected item to a suitable check of its behavior, or mark it unverified with the reason. Reuse existing checks where they provide coverage; one check may cover several items. Planned checks are not completed verification.
 
-  Scale the answer to the change. If it stays inside internal code with no other callers, one line naming the search is enough; a docs-only change needs only one line saying so. If it touches a public API, a shared module, a data or config format, error semantics or permissions, answer all three in full. If the impact reaches beyond the issue, keep the fix minimal; when containing it needs an undecided product trade-off, ask the user as in section 2.
+  Scale the answer to the change. If it stays inside internal code with no other callers, one line naming the search is enough. A docs-only change that does not alter behavior or contracts needs only one line explaining that. Changes to skill instructions, operational commands or API contracts still need impact analysis even when only Markdown files change. If it touches a public API, a shared module, a data or config format, error semantics or permissions, answer all three in full. If the impact reaches beyond the issue, keep the fix minimal; when containing it needs an undecided product trade-off, ask the user as in section 2.
 - Fix the root cause, limited to the issue and what it necessarily touches. Do not refactor along the way, upgrade unrelated dependencies or copy the issue's suggested fix without judgment.
 - Add a regression check that identifies this defect. For program-logic bugs suited to automation, confirm the test fails before the fix and passes after. For docs or simple static fixes, use a fitting check; do not add hollow tests for form's sake.
-- Run the repo's required checks, the checks the Impact field calls for and the applicable tests, lint, type checks and builds for the affected area. Record only commands actually run and their results; mark missing environments, unrelated pre-existing failures and CI not yet run separately.
+- Run the repo's required checks, the checks the Impact field calls for and the applicable tests, lint, type checks and builds for the affected area. Record only commands actually run and their results in Verification, then update Impact to reference those results and identify anything still unverified. Mark missing environments, unrelated pre-existing failures and CI not yet run separately.
 - If required verification has not passed, or a substantive unresolved risk remains, do not commit, push or open a PR. Keep the fix reviewable and report the blocker; if the user then changes the delivery scope, follow their explicit instructions.
 
 ## 4. Review the code after fixing
