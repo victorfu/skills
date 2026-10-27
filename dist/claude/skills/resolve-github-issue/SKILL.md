@@ -30,7 +30,16 @@ Verify the user's issue with evidence and deliver a fix. Reply in the user's lan
 2. Read the issue title, full body, open/closed state and existing labels. Read the repo guidelines known to apply first. If the issue is closed, find out why and report it; do not reopen it or add the progress label. Continue only if the user explicitly asks.
 3. **Before** deeper verification or code changes, add a label named **in progress** to the confirmed open issue. GitHub label names are case-insensitive; if a label such as In Progress already exists, use its actual name. If the repo has no such label, you may create it and then add it. Do not rename or overwrite other labels, and do not change the issue's open/closed state to "in progress".
 4. Record whether the label already existed and whether this run added it. If it already exists, do not add it again; after adding, re-read to confirm success. If the account lacks triage/write permission on the repo (common when contributing upstream through a fork), record the reason, skip labeling and continue, and explain this in the final reply. For other write failures, you may finish the read-only investigation, but do not start code changes until the progress label succeeds or the user explicitly allows skipping it.
-5. Keep a task record of the canonical issue URL, repo, original labels, this run's label changes and the current stage; later add the base SHA, worktree path, branch, verification results, commit SHA and PR URL. When resuming, first reconcile this record with the current GitHub and git state rather than re-creating side effects from scratch.
+5. Keep a task record and fill each field as its stage completes:
+   - Target: canonical issue URL, repo, original labels, this run's label changes and the current stage.
+   - Verdict: the verdict and its key evidence (section 2).
+   - Workspace: base SHA, worktree path and branch.
+   - Impact: who is affected, what changes and how each is confirmed (section 3).
+   - Verification: commands actually run and their results, plus anything left unverified.
+   - Review: scope, findings and limitations (section 4).
+   - Delivery: commit SHA and PR URL.
+
+   The PR body and final reply are written from this record; do not claim anything it does not contain. When resuming, first reconcile this record with the current GitHub and git state rather than re-creating side effects from scratch.
 
 ## 2. Judge validity and soundness from evidence
 
@@ -63,9 +72,15 @@ Pure feature proposals need clear requirements and acceptance criteria; do not t
 - First check git status, remotes, the current HEAD, existing branches and matching PRs. Never overwrite or commit along the user's uncommitted work.
 - Fetch the latest state of the confirmed remote target base. Prefer a separate worktree; if there is no matching local repo, clone the specified repo into a suitable new directory. Never fix in an unrelated repo.
 - By default, name branches by the kind of change: fix/issue-<number>-<short-slug> for bug fixes, feature/issue-<number>-<short-slug> for new features; repo or user rules take precedence. If a branch with the same name exists, check who owns it; reuse it only if you can confirm it belongs to this task, otherwise pick a non-conflicting name.
+- Before editing, write the Impact field of the task record by answering:
+  1. Who is affected: the callers, shared modules and data flows that reach the code you will change. Find them by searching, and record the search and what it found; never answer from memory.
+  2. What changes: inputs and outputs, error handling, persisted or wire formats, configuration and existing compatibility.
+  3. How it is confirmed: map each affected item to a check that shows the original problem is fixed and the related behavior still holds, or mark it unverified.
+
+  Scale the answer to the change. If it stays inside internal code with no other callers, one line naming the search is enough. If it touches a public API, a shared module, a data or config format, error semantics or permissions, answer all three in full. If the impact reaches beyond the issue, keep the fix minimal; when containing it needs an undecided product trade-off, ask the user as in section 2.
 - Fix the root cause, limited to the issue and what it necessarily touches. Do not refactor along the way, upgrade unrelated dependencies or copy the issue's suggested fix without judgment.
 - Add a regression check that identifies this defect. For program-logic bugs suited to automation, confirm the test fails before the fix and passes after. For docs or simple static fixes, use a fitting check; do not add hollow tests for form's sake.
-- Run the repo's required checks and the applicable tests, lint, type checks and builds for the affected area. Record only commands actually run and their results; mark missing environments, unrelated pre-existing failures and CI not yet run separately.
+- Run the repo's required checks, the checks the Impact field calls for and the applicable tests, lint, type checks and builds for the affected area. Record only commands actually run and their results; mark missing environments, unrelated pre-existing failures and CI not yet run separately.
 - If required verification has not passed, or a substantive unresolved risk remains, do not commit, push or open a PR. Keep the fix reviewable and report the blocker; if the user then changes the delivery scope, follow their explicit instructions.
 
 ## 4. Review the code after fixing
@@ -73,6 +88,7 @@ Pure feature proposals need clear requirements and acceptance criteria; do not t
 After tests pass, do one review separate from the implementation steps. Do not substitute "tests are green" for review, and do not claim it was an external independent review:
 
 - Read the full diff against base, the relevant callers and tests, and compare against the issue's acceptance criteria.
+- Compare the diff with the Impact field. If it touches code, callers or behavior the field does not list, update the field and run the checks it now calls for.
 - Check that the root cause is eliminated, plus edge inputs, error paths, compatibility, permissions, data consistency and any other behavior this change genuinely affects.
 - Confirm the diff has no unrelated files, secrets, test output, debug logs or assertions weakened to get green.
 - When you find a provable problem, fix it, re-run the relevant verification and review the final version again, until no substantive problems remain.
@@ -84,7 +100,7 @@ After tests pass, do one review separate from the implementation steps. Do not s
 2. If a commit hook rewrites files, or anything changes after the commit, re-verify and re-review the affected content before finishing the commit; confirm the final commit's tree is exactly the verified content.
 3. Before pushing, confirm the target remote, repo visibility, base and branch. Push this task's fix branch; never force push and never push directly to the default branch. If a fork is needed, prefer a verified fork of the same repo; creating a new fork or moving private content across repos is outside the default scope, so report the needed decision first.
 4. Before opening the PR, query again for PRs with the same head/base and for the issue; if an OPEN PR exists, reuse it and return its link. If an earlier PR was MERGED, re-check whether the target version is already fixed; if it was CLOSED without merging, find out why, and do not treat it as a successful delivery or reopen it yourself. After API/network timeouts, check the actual state before retrying; never blindly repeat a commit, push or PR creation.
-5. Write a PR title and body that follow the repo's template, including: the problem and evidence of validity, behavior after the fix, a summary of the fix, the verification actually performed, review results, substantive limitations and the issue link. Do not turn "no problems found" into a zero-risk guarantee.
+5. Write a PR title and body that follow the repo's template, including: the problem and evidence of validity, behavior after the fix, a summary of the fix, the impact scope and how each part was confirmed, the verification actually performed, review results, substantive limitations and the issue link. Do not turn "no problems found" into a zero-risk guarantee.
 6. After the checks, open a regular PR (ready for review) directly, explicitly specifying the correct base and head. Use a draft only when the user or repo explicitly requires it.
 7. If the PR fully fixes an issue in the same repo and targets the default branch, add Closes #<number>; for a different repo use Closes owner/repo#<number>. When it handles only part of the issue or targets another branch, use Refs with the full issue URL and describe the remaining scope; do not falsely claim it will auto-close.
 8. Re-read the PR to confirm the URL, base, head, head SHA, OPEN state and body; confirm the remote head SHA matches the final local commit. Report the actual CI state when available; pending CI on a fresh PR is not passing. If you find CI failures related to the fix, fix and re-verify them and update the same PR; never open a second PR.
