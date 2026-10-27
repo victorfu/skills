@@ -1,6 +1,6 @@
 {
   "name": "victorfu-skills",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Shared development workflow skills; each skill runs only under its explicit invocation contract.",
   "author": {
     "name": "Victor"
