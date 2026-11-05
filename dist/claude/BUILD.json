@@ -1,9 +1,12 @@
 {
   "generated": true,
   "source": "skills/",
-  "version": "0.1.6",
+  "version": "0.2.0",
   "platform": "claude",
   "sha256": {
+    "skills/address-review-feedback/LICENSE": "a37e0e9697144819e1d965176ac4ae5bc3fa02d11e7812036bbcadf6dafe2400",
+    "skills/address-review-feedback/SKILL.md": "2c0a584b88f37ae68346a9d12f9c050464d0b64408a03def007956977459ce4b",
+    "skills/address-review-feedback/references/upstream.md": "652f94bf58e94f0dde9ce561d2e260584869fd5fbb9d3d6e4f3691ada2642cff",
     "skills/resolve-github-issue/SKILL.md": "e6d1750b4513dbba54e6b6c3e07b4db6b6eccd853ef7e3e2d98f9d243f9399bc",
     "skills/resolve-github-issue/references/github-workflow.md": "fcb09bbf6364b28f541bfedf8bba1d68c58ef5c46118775808f742fd32b8febe"
   }

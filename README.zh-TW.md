@@ -7,6 +7,7 @@
 | Skill | 用途 |
 | --- | --- |
 | `resolve-github-issue` | 給它一個 GitHub issue，它會先驗證問題是否成立，再修正、測試、審查，最後開 PR。 |
+| `address-review-feedback` | 先對照目前程式碼驗證 review 意見，再處理成立的修改；說明不成立、已修正及待釐清的項目。 |
 
 ## 需求
 
@@ -67,7 +68,7 @@ codex plugin marketplace add victorfu/skills --ref v0.1.0
 
 ## 使用
 
-Codex 的 `@` 選單選取 **Dev Workflow Kit**，skill 選單仍顯示 **Resolve GitHub Issue**。Claude Code 透過 manifest 的 `displayName` 在 plugin 選單顯示 **Dev Workflow Kit**；下方的斜線指令維持不變。
+Codex 的 `@` 選單選取 **Dev Workflow Kit**，再選 **Resolve GitHub Issue** 或 **Address Review Feedback**。Claude Code 透過 manifest 的 `displayName` 在 plugin 選單顯示 **Dev Workflow Kit**。
 
 Skill 只會在你明確叫用時執行；單純貼上 issue 網址不會觸發。
 
@@ -98,6 +99,27 @@ $victorfu-skills:resolve-github-issue https://github.com/OWNER/REPO/issues/123
 它**不會**：merge PR、關閉或重開 issue、在 issue 留言、force push，或直接 push 到 default branch。
 
 它也不會自行開啟 PR 的 auto-fix；PR 建立後，會依你使用的客戶端告訴你怎麼開。
+
+### 處理 code review 意見
+
+叫用 `address-review-feedback` 並提供 PR 網址或貼上 review 意見。兩個 skill 都需要明確叫用；收到 review 通知或單純貼網址不會啟動流程。
+
+```text
+# Claude Code：只評估，不修改或發送
+/victorfu-skills:address-review-feedback https://github.com/OWNER/REPO/pull/123 只評估 review 意見，不修改或發送任何內容。
+
+# Codex：先驗證，再修正本機程式碼
+$victorfu-skills:address-review-feedback 驗證下方 review 意見，修正成立的項目並執行相關測試。不要 commit、push 或回覆留言。
+
+# 任一客戶端：以上方對應的叫用指令加上
+https://github.com/OWNER/REPO/pull/123 驗證 review 意見，修正成立的項目、測試、commit 並 push 到我的既有 PR 分支。不要回覆留言或 resolve threads。
+```
+
+它會核對最新程式碼、需求、呼叫端及支援平台，將各項意見判定為 `VALID`、`INVALID`、`ALREADY_FIXED` 或 `NEEDS_INFO`。意見成立與建議修法是否正確會分開驗證；刪除看似未使用的程式碼前，也會檢查公開 API 或動態呼叫。有一項需要釐清時，只暫停該項及其相依修改，其他已驗證且已授權的項目會繼續。
+
+只叫用並提供意見、沒有指定動作時，預設只評估。Codex skill picker 的預設提示會要求在已授權範圍內修正。Commit、push、實際回覆留言及 resolve threads 各自需要使用者相應的要求；請它寫回覆草稿不會直接發送。流程不會 merge PR 或 force push。
+
+此 skill 改寫自 [Superpowers](https://github.com/obra/superpowers)，[來源說明](skills/address-review-feedback/references/upstream.md) 記錄固定的上游 revision、整合調整及 MIT 授權。不需要安裝整套 Superpowers。新增 skill 已在本機檢查打包，完整客戶端叫用尚未驗證。
 
 ## 更新
 

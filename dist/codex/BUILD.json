@@ -1,9 +1,13 @@
 {
   "generated": true,
   "source": "skills/",
-  "version": "0.1.6",
+  "version": "0.2.0",
   "platform": "codex",
   "sha256": {
+    "skills/address-review-feedback/LICENSE": "a37e0e9697144819e1d965176ac4ae5bc3fa02d11e7812036bbcadf6dafe2400",
+    "skills/address-review-feedback/SKILL.md": "e5e37be953d38845e22c12b13938774004281713383dad91a8c02d73a093210b",
+    "skills/address-review-feedback/agents/openai.yaml": "000c4bc8b7cf550c46e6ae18d66b81db479876573cdd10b0e941dc5880614f9e",
+    "skills/address-review-feedback/references/upstream.md": "652f94bf58e94f0dde9ce561d2e260584869fd5fbb9d3d6e4f3691ada2642cff",
     "skills/resolve-github-issue/SKILL.md": "888350d65c32b3c1d9cefb186056db3f6af915ba6a4be3f8967bde680dcba760",
     "skills/resolve-github-issue/agents/openai.yaml": "31fd198dedad3d4cd1f3cac6049e1a2943d0dba879f0d7bbc999479d0a777c19",
     "skills/resolve-github-issue/references/github-workflow.md": "fcb09bbf6364b28f541bfedf8bba1d68c58ef5c46118775808f742fd32b8febe"

@@ -39,17 +39,25 @@ class BuildTests(unittest.TestCase):
         self.run_build(check=True)
         after = {p.relative_to(self.root): p.read_bytes() for p in self.root.rglob('*') if p.is_file()}
         self.assertEqual(before, after)
-        original = (self.root / 'skills/resolve-github-issue/SKILL.md').read_bytes()
-        for platform in ('codex', 'claude'):
-            adapted = (self.root / f'dist/{platform}/skills/resolve-github-issue/SKILL.md').read_bytes()
-            if platform == 'claude':
-                adapted = adapted.replace(b'disable-model-invocation: true\n', b'', 1)
-            self.assertEqual(original, adapted)
+        for skill in (self.root / 'skills').iterdir():
+            if not skill.is_dir() or skill.name.startswith('.'):
+                continue
+            original = (skill / 'SKILL.md').read_bytes()
+            for platform in ('codex', 'claude'):
+                with self.subTest(skill=skill.name, platform=platform):
+                    adapted = (self.root / f'dist/{platform}/skills/{skill.name}/SKILL.md').read_bytes()
+                    if platform == 'claude':
+                        adapted = adapted.replace(b'disable-model-invocation: true\n', b'', 1)
+                    self.assertEqual(original, adapted)
 
     def test_codex_only_metadata_stays_out_of_claude(self):
         self.run_build()
-        self.assertTrue((self.root / 'dist/codex/skills/resolve-github-issue/agents/openai.yaml').is_file())
-        self.assertFalse((self.root / 'dist/claude/skills/resolve-github-issue/agents').exists())
+        for skill in (self.root / 'skills').iterdir():
+            if not skill.is_dir() or skill.name.startswith('.'):
+                continue
+            with self.subTest(skill=skill.name):
+                self.assertTrue((self.root / f'dist/codex/skills/{skill.name}/agents/openai.yaml').is_file())
+                self.assertFalse((self.root / f'dist/claude/skills/{skill.name}/agents').exists())
 
     def test_icons_are_shipped_and_referenced(self):
         self.run_build()
