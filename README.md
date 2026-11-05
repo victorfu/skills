@@ -7,7 +7,7 @@ Development workflow skills for [Claude Code](https://code.claude.com) and [Code
 | Skill | Purpose |
 | --- | --- |
 | `resolve-github-issue` | Give it a GitHub issue: it first verifies the problem is real, then fixes, tests, and reviews it, and finally opens a PR. |
-| `receiving-code-review` | Verify review feedback against current code before applying justified fixes; explain rejected, already-fixed and blocked concerns. |
+| `address-review-feedback` | Verify review feedback against current code before applying justified fixes; explain rejected, already-fixed and blocked concerns. |
 
 ## Requirements
 
@@ -68,7 +68,7 @@ Official sources: [Claude CLI setup](https://code.claude.com/docs/en/setup), [Cl
 
 ## Usage
 
-In Codex, select **Dev Workflow Kit** with `@`, then choose **Resolve GitHub Issue** or **Receiving Code Review**. In Claude Code, the plugin picker uses **Dev Workflow Kit** via the manifest's `displayName`.
+In Codex, select **Dev Workflow Kit** with `@`, then choose **Resolve GitHub Issue** or **Address Review Feedback**. In Claude Code, the plugin picker uses **Dev Workflow Kit** via the manifest's `displayName`.
 
 The skill runs only when you invoke it explicitly; pasting an issue URL on its own does not trigger it.
 
@@ -100,16 +100,16 @@ It **does not**: merge the PR, close or reopen the issue, comment on the issue, 
 
 It also does not turn on auto-fix for the PR itself; once the PR is open, it tells you how to enable it in the client you are using.
 
-### Receiving code review
+### Addressing review feedback
 
-Use `receiving-code-review` with a PR URL or pasted feedback. Both skills require explicit invocation; review notifications and pasted URLs alone do not start work.
+Use `address-review-feedback` with a PR URL or pasted feedback. Both skills require explicit invocation; review notifications and pasted URLs alone do not start work.
 
 ```text
 # Claude Code: assess without editing or posting
-/victorfu-skills:receiving-code-review https://github.com/OWNER/REPO/pull/123 Assess the feedback only; do not modify or post anything.
+/victorfu-skills:address-review-feedback https://github.com/OWNER/REPO/pull/123 Assess the feedback only; do not modify or post anything.
 
 # Codex: verify and fix locally
-$victorfu-skills:receiving-code-review Check the feedback below and apply justified local fixes with relevant tests. Do not commit, push or post replies.
+$victorfu-skills:address-review-feedback Check the feedback below and apply justified local fixes with relevant tests. Do not commit, push or post replies.
 
 # Either client: use its invocation above, followed by
 https://github.com/OWNER/REPO/pull/123 Verify the feedback, fix valid concerns, test, commit and push to my existing PR branch. Do not post replies or resolve threads.
@@ -119,7 +119,7 @@ It checks the latest code, requirements, callers and supported platforms, then c
 
 A bare invocation with feedback defaults to assessment. The Codex skill picker's default prompt requests fixes within your authorized scope. Commits, pushes, published replies and thread resolution require the corresponding user request; asking for a reply draft does not publish it. The workflow does not merge PRs or force-push.
 
-Adapted from [Superpowers](https://github.com/obra/superpowers), with a pinned source revision, local adaptations and the upstream MIT notice documented [here](skills/receiving-code-review/references/upstream.md). No Superpowers installation is required. The new skill's package is checked locally; full client invocation remains unverified.
+Adapted from [Superpowers](https://github.com/obra/superpowers), with a pinned source revision, local adaptations and the upstream MIT notice documented [here](skills/address-review-feedback/references/upstream.md). No Superpowers installation is required. The new skill's package is checked locally; full client invocation remains unverified.
 
 ## Updating
 

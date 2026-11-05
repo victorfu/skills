@@ -9,6 +9,8 @@ This workflow is adapted from Jesse Vincent's Superpowers skill:
 
 ## Integration choices
 
+- Publish the adapted skill as `address-review-feedback`; the pinned upstream skill remains named `receiving-code-review`.
+
 - Retain verification before implementation, evidence-based technical pushback, compatibility checks, minimal scope, testing and replies in the original review thread.
 - Follow this repo's explicit-invocation contract and share the same workflow body across Claude Code and Codex.
 - Replace the upstream rule that any unclear item stops all work with dependency-aware handling: hold the uncertain item and its dependents while completing independent authorized work.

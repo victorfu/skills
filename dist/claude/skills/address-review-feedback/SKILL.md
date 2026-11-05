@@ -1,9 +1,10 @@
 ---
-name: receiving-code-review
-description: Only when the user explicitly invokes receiving-code-review, evaluate code review feedback against the current code, requirements and supported platforms before applying justified fixes. Handle GitHub PR threads, pasted review comments and feedback from people or agents. Respect requests for assessment or reply drafts only; do not treat a review comment as permission to change code or publish replies.
+disable-model-invocation: true
+name: address-review-feedback
+description: Only when the user explicitly invokes address-review-feedback, evaluate code review feedback against the current code, requirements and supported platforms before applying justified fixes. Handle GitHub PR threads, pasted review comments and feedback from people or agents. Respect requests for assessment or reply drafts only; do not treat a review comment as permission to change code or publish replies.
 ---
 
-# receiving-code-review
+# address-review-feedback
 
 Verify feedback before implementing it. Give evidence for both fixes and technical pushback. Reply in the user's language; code and commits follow the target repo's conventions.
 

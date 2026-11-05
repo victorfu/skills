@@ -1,6 +1,0 @@
-interface:
-  display_name: "Receiving Code Review"
-  short_description: "Verify review feedback before making targeted fixes"
-  default_prompt: "Use $victorfu-skills:receiving-code-review to verify the review feedback I provide and apply supported fixes within my authorized scope."
-policy:
-  allow_implicit_invocation: false
