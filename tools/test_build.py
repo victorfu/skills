@@ -70,6 +70,8 @@ class BuildTests(unittest.TestCase):
         claude = self.root / 'dist/claude'
         manifest = json.loads((claude / '.claude-plugin/plugin.json').read_text(encoding='utf-8'))
         self.assertEqual(manifest['icon'], f'./assets/{build.CLAUDE_ICON}')
+        self.assertEqual(manifest['name'], 'dev-workflow-kit')
+        self.assertNotIn('displayName', manifest)
         self.assertEqual((claude / 'assets' / build.CLAUDE_ICON).read_bytes(), (self.root / 'assets' / build.CLAUDE_ICON).read_bytes())
 
     def test_reject_missing_icon(self):

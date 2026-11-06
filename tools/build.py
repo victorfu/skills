@@ -57,9 +57,10 @@ def ship_icon(output, platform, image):
 
 def expected_files():
     release = json.loads((ROOT / 'release.json').read_text(encoding='utf-8'))
-    require(isinstance(release, dict) and set(release) == {'name', 'displayName', 'version', 'description', 'author', 'repository'}, 'Invalid release metadata')
+    require(isinstance(release, dict) and set(release) == {'name', 'displayName', 'claudeName', 'version', 'description', 'author', 'repository'}, 'Invalid release metadata')
     require(isinstance(release['displayName'], str) and release['displayName'].strip(), 'Missing plugin display name')
-    require(re.fullmatch(r'[a-z0-9]+(?:-[a-z0-9]+)*', release['name']), 'Invalid package name')
+    for key in ('name', 'claudeName'):
+        require(re.fullmatch(r'[a-z0-9]+(?:-[a-z0-9]+)*', release[key]), f'Invalid package {key}')
     require(re.fullmatch(r'(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)', release['version']), 'Use a stable SemVer version')
     require(release['author'].get('name') and release['description'], 'Missing author/description')
     output = {}
@@ -100,12 +101,16 @@ def expected_files():
                 hashes[platform][relative] = hashlib.sha256(adapted).hexdigest()
     for platform in PLATFORMS:
         manifest = dict(release)
+        claude_name = manifest.pop('claudeName')
         if platform == 'codex':
             interface = {'displayName': manifest.pop('displayName'), 'shortDescription': release['description'], 'brandColor': BRAND_COLOR}
             for field, image in CODEX_ICONS.items():
                 interface[field] = ship_icon(output, platform, image)
             manifest.update(skills='./skills/', interface=interface)
         else:
+            # Claude lists plugins by their kebab-case name, like other plugins; skip displayName.
+            del manifest['displayName']
+            manifest['name'] = claude_name
             manifest['icon'] = ship_icon(output, platform, CLAUDE_ICON)
         # Claude scans its standard skills/ directory without an extra path.
         output[f'dist/{platform}/.{platform}-plugin/plugin.json'] = json_bytes(manifest)
@@ -129,7 +134,7 @@ def expected_files():
         'name': name,
         'owner': release['author'],
         'metadata': {'description': release['description']},
-        'plugins': [{'name': name, 'displayName': release['displayName'], 'source': './dist/claude', 'description': release['description']}],
+        'plugins': [{'name': release['claudeName'], 'source': './dist/claude', 'description': release['description']}],
     })
     return output
 

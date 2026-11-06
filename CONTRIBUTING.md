@@ -7,7 +7,7 @@ skills/<name>/                     The only hand-written source
   SKILL.md                         Frontmatter holds only name and description; the body is the full workflow
   references/                      Reference docs the skill links to
   agents/openai.yaml               Codex-only display name and invocation policy
-release.json                       Version and plugin metadata (name is the stable ID, displayName the display name)
+release.json                       Version and plugin metadata (name is the Codex plugin ID, displayName the Codex display name, claudeName the Claude plugin ID)
 assets/icon.svg                    Source for the Codex plugin icon; icon.png (512) and logo.png (1024) are exported from it
 tools/build.py                     Generates dist/ and both marketplaces; --check compares without writing
 tools/test_build.py                Packaging regression tests (run in a temporary directory)
@@ -68,7 +68,7 @@ Try it in a throwaway test project so it does not mix with your regular installa
 claude --plugin-dir /absolute/path/to/skills/dist/claude
 ```
 
-Invoke `/victorfu-skills:resolve-github-issue`. After changing the source, run `build.py` again, then run `/reload-plugins` or start a new session.
+Invoke `/dev-workflow-kit:resolve-github-issue`. After changing the source, run `build.py` again, then run `/reload-plugins` or start a new session.
 
 **Codex**: register the marketplace from the local path and install.
 

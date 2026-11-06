@@ -24,10 +24,10 @@
 
 ```sh
 claude plugin marketplace add victorfu/skills
-claude plugin install victorfu-skills@victorfu-skills
+claude plugin install dev-workflow-kit@victorfu-skills
 ```
 
-也可以在 Claude Code 對話中執行 `/plugin marketplace add victorfu/skills`，再執行 `/plugin install victorfu-skills@victorfu-skills`。安裝後重新啟動 Claude Code，或執行 `/reload-plugins`。
+也可以在 Claude Code 對話中執行 `/plugin marketplace add victorfu/skills`，再執行 `/plugin install dev-workflow-kit@victorfu-skills`。安裝後重新啟動 Claude Code，或執行 `/reload-plugins`。
 
 ### Codex
 
@@ -62,19 +62,19 @@ codex plugin marketplace add victorfu/skills --ref v0.1.0
 - **三 OS CI 已通過的是打包測試**：Ubuntu 24.04、macOS 26 ARM64、Windows Server 2025，搭配 Python 3.10／3.12，共六組均通過產物檢查與 10 項單元測試。它不代表 Windows 10／11、所有 CPU 架構或 GUI／模型執行都測過。[CI 結果](https://github.com/victorfu/skills/actions/runs/40261949089)
 - **macOS CLI 實測範圍**：macOS 27.0.1 ARM64、Codex 0.164.0、Claude Code 2.1.310。兩邊均從 GitHub 安裝 `0.1.0`，並以本機 Git fixture 測試 `0.1.0 → 0.1.1`；已核對新程序的載入路徑、版本及內容 hash。`0.1.1` 只存在隔離 fixture，並未發布。
 - **Codex 已通過登入後的唯讀叫用**：Codex CLI 0.164.0 以既有 ChatGPT 登入實測 `$victorfu-skills:resolve-github-issue`，模型讀取正確 plugin 的 `SKILL.md`，並在缺少 repo 時要求補充資訊。Claude 的隔離叫用仍因未登入而失敗；兩邊均未驗證完整 issue → PR 流程或隱式叫用禁止。詳見[叫用驗證紀錄](docs/verification.md#codex-登入後叫用驗證2026-10-26)。
-- **名稱一致**：skill 名稱為 `resolve-github-issue`，Codex 顯示名稱為「Resolve GitHub Issue」；plugin 顯示名稱為「Dev Workflow Kit」，plugin／marketplace 識別碼仍為 `victorfu-skills`。兩個 CLI 的 plugin 載入清單均以 `victorfu-skills:resolve-github-issue` 識別 skill，集合前綴不是另一個 skill 名稱。
+- **名稱一致**：skill 名稱為 `resolve-github-issue`，Codex 顯示名稱為「Resolve GitHub Issue」；Codex 的 plugin 顯示名稱為「Dev Workflow Kit」，plugin 識別碼為 `victorfu-skills`；Claude Code 的 plugin 識別碼為 `dev-workflow-kit`，與其他 plugin 一樣採 kebab-case。兩邊的 marketplace 識別碼皆為 `victorfu-skills`。Codex 以 `victorfu-skills:resolve-github-issue`、Claude Code 以 `dev-workflow-kit:resolve-github-issue` 識別 skill，前綴是 plugin namespace，不是另一個 skill 名稱。
 
 官方依據：[Claude CLI 環境](https://code.claude.com/docs/en/setup)、[Claude Desktop plugins／WSL 限制](https://code.claude.com/docs/en/desktop#install-plugins)、[Claude Linux beta](https://code.claude.com/docs/en/desktop-linux)、[Codex CLI](https://learn.chatgpt.com/docs/codex/cli)、[Codex plugins](https://learn.chatgpt.com/docs/plugins)、[Codex Linux preview](https://learn.chatgpt.com/docs/linux/linux-app)。隔離方法、測試命令與尚未驗證項目見 [實測紀錄](docs/verification.md#隔離客戶端實測2026-10-26)。
 
 ## 使用
 
-Codex 的 `@` 選單選取 **Dev Workflow Kit**，再選 **Resolve GitHub Issue** 或 **Address Review Feedback**。Claude Code 透過 manifest 的 `displayName` 在 plugin 選單顯示 **Dev Workflow Kit**。
+Codex 的 `@` 選單選取 **Dev Workflow Kit**，再選 **Resolve GitHub Issue** 或 **Address Review Feedback**。Claude Code 的 plugin 清單顯示 **dev-workflow-kit**。
 
 Skill 只會在你明確叫用時執行；單純貼上 issue 網址不會觸發。
 
 ```text
 # Claude Code
-/victorfu-skills:resolve-github-issue https://github.com/OWNER/REPO/issues/123
+/dev-workflow-kit:resolve-github-issue https://github.com/OWNER/REPO/issues/123
 
 # Codex plugin（或從 skill picker 選取對應項目）
 $victorfu-skills:resolve-github-issue https://github.com/OWNER/REPO/issues/123
@@ -106,7 +106,7 @@ $victorfu-skills:resolve-github-issue https://github.com/OWNER/REPO/issues/123
 
 ```text
 # Claude Code：只評估，不修改或發送
-/victorfu-skills:address-review-feedback https://github.com/OWNER/REPO/pull/123 只評估 review 意見，不修改或發送任何內容。
+/dev-workflow-kit:address-review-feedback https://github.com/OWNER/REPO/pull/123 只評估 review 意見，不修改或發送任何內容。
 
 # Codex：先驗證，再修正本機程式碼
 $victorfu-skills:address-review-feedback 驗證下方 review 意見，修正成立的項目並執行相關測試。不要 commit、push 或回覆留言。
@@ -126,7 +126,7 @@ https://github.com/OWNER/REPO/pull/123 驗證 review 意見，修正成立的項
 ```sh
 # Claude Code
 claude plugin marketplace update victorfu-skills
-claude plugin update victorfu-skills@victorfu-skills
+claude plugin update dev-workflow-kit@victorfu-skills
 
 # Codex
 codex plugin marketplace upgrade victorfu-skills
@@ -138,7 +138,7 @@ codex plugin marketplace upgrade victorfu-skills
 
 ```sh
 # Claude Code
-claude plugin uninstall victorfu-skills@victorfu-skills
+claude plugin uninstall dev-workflow-kit@victorfu-skills
 claude plugin marketplace remove victorfu-skills
 
 # Codex
@@ -148,7 +148,7 @@ codex plugin marketplace remove victorfu-skills
 
 ## 疑難排解
 
-- **叫用到另一個版本的 skill**：你的環境裡可能已有同名的 standalone skill（例如 `~/.claude/skills/resolve-github-issue/`）。在 Claude Code 中改用帶 namespace 的 `/victorfu-skills:resolve-github-issue`。
+- **叫用到另一個版本的 skill**：你的環境裡可能已有同名的 standalone skill（例如 `~/.claude/skills/resolve-github-issue/`）。在 Claude Code 中改用帶 namespace 的 `/dev-workflow-kit:resolve-github-issue`。
 - **更新後仍是舊版**：重新啟動客戶端或開新 session；Claude Code 需要版本號改變才會更新快取。
 - **Codex 沒有 `plugin add` 指令**：Codex 版本太舊，請先升級，或改從 desktop 的 Plugins 目錄安裝。
 - **`gh` 權限錯誤**：執行 `gh auth status` 確認已登入，且帳號對目標 repo 有存取權。
