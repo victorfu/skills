@@ -117,7 +117,7 @@ https://github.com/OWNER/REPO/pull/123 Verify the feedback, fix valid concerns, 
 
 It checks the latest code, requirements, callers and supported platforms, then classifies each concern as `VALID`, `INVALID`, `ALREADY_FIXED` or `NEEDS_INFO`. It verifies the proposed fix separately from the concern and checks public or dynamic entry points before deleting apparently unused code. When one item needs clarification, only that item and its dependents wait; independent authorized fixes continue.
 
-A bare invocation with feedback defaults to assessment. The Codex skill picker's default prompt requests fixes within your authorized scope. Commits, pushes, published replies and thread resolution require the corresponding user request; asking for a reply draft does not publish it. The workflow does not merge PRs or force-push.
+Invoking this skill defaults to verifying feedback, applying justified fixes, checking merge conflicts and builds, committing and pushing to the existing PR, and publishing replies to review comments. Explicit limits such as assessment-only, local-only, no push or no replies override those defaults. Asking for a reply draft does not publish it. Resolving threads still requires an explicit request; the workflow does not merge PRs or force-push.
 
 Adapted from [Superpowers](https://github.com/obra/superpowers), with a pinned source revision, local adaptations and the upstream MIT notice documented [here](skills/address-review-feedback/references/upstream.md). No Superpowers installation is required. The new skill's package is checked locally; full client invocation remains unverified.
 

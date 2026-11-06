@@ -117,7 +117,7 @@ https://github.com/OWNER/REPO/pull/123 驗證 review 意見，修正成立的項
 
 它會核對最新程式碼、需求、呼叫端及支援平台，將各項意見判定為 `VALID`、`INVALID`、`ALREADY_FIXED` 或 `NEEDS_INFO`。意見成立與建議修法是否正確會分開驗證；刪除看似未使用的程式碼前，也會檢查公開 API 或動態呼叫。有一項需要釐清時，只暫停該項及其相依修改，其他已驗證且已授權的項目會繼續。
 
-只叫用並提供意見、沒有指定動作時，預設只評估。Codex skill picker 的預設提示會要求在已授權範圍內修正。Commit、push、實際回覆留言及 resolve threads 各自需要使用者相應的要求；請它寫回覆草稿不會直接發送。流程不會 merge PR 或 force push。
+明確叫用後，預設會驗證意見、修復成立的問題、檢查合併衝突與 build、commit 並 push 更新既有 PR，最後回覆 review comments。使用者明確要求只驗證、只修改本機、不 push 或不回覆時，會依限制執行；要求回覆草稿不會直接發送。Resolve threads 仍需明確要求，流程不會 merge PR 或 force push。
 
 此 skill 改寫自 [Superpowers](https://github.com/obra/superpowers)，[來源說明](skills/address-review-feedback/references/upstream.md) 記錄固定的上游 revision、整合調整及 MIT 授權。不需要安裝整套 Superpowers。新增 skill 已在本機檢查打包，完整客戶端叫用尚未驗證。
 

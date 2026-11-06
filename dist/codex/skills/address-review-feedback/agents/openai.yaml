@@ -1,6 +1,6 @@
 interface:
   display_name: "Address Review Feedback"
-  short_description: "Verify review feedback before making targeted fixes"
-  default_prompt: "Use $devflow:address-review-feedback to verify the review feedback I provide and apply supported fixes within my authorized scope."
+  short_description: "Verify feedback, fix issues, update PRs and reply"
+  default_prompt: "Use $devflow:address-review-feedback to verify the review feedback, fix valid issues, check merge conflicts and builds, commit and push to the existing PR, and reply to review comments unless I explicitly limit the scope."
 policy:
   allow_implicit_invocation: false
