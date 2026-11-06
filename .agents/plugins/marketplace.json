@@ -1,11 +1,11 @@
 {
   "name": "victorfu-skills",
   "interface": {
-    "displayName": "Dev Workflow Kit"
+    "displayName": "DevFlow"
   },
   "plugins": [
     {
-      "name": "dev-workflow-kit",
+      "name": "devflow",
       "source": {
         "source": "local",
         "path": "./dist/codex"

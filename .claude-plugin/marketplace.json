@@ -8,7 +8,7 @@
   },
   "plugins": [
     {
-      "name": "dev-workflow-kit",
+      "name": "devflow",
       "source": "./dist/claude",
       "description": "Shared development workflow skills; each skill runs only under its explicit invocation contract."
     }

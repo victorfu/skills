@@ -6,10 +6,10 @@
   "sha256": {
     "skills/address-review-feedback/LICENSE": "a37e0e9697144819e1d965176ac4ae5bc3fa02d11e7812036bbcadf6dafe2400",
     "skills/address-review-feedback/SKILL.md": "e5e37be953d38845e22c12b13938774004281713383dad91a8c02d73a093210b",
-    "skills/address-review-feedback/agents/openai.yaml": "856f046f4dbb4b71d43a6030d37f879c5b61a256ff822dddc526fa310404d9a9",
+    "skills/address-review-feedback/agents/openai.yaml": "724805747e90b4f8516dd89e98337970554bd42339e7cadcd616d2103639ac35",
     "skills/address-review-feedback/references/upstream.md": "652f94bf58e94f0dde9ce561d2e260584869fd5fbb9d3d6e4f3691ada2642cff",
     "skills/resolve-github-issue/SKILL.md": "888350d65c32b3c1d9cefb186056db3f6af915ba6a4be3f8967bde680dcba760",
-    "skills/resolve-github-issue/agents/openai.yaml": "372a24b4bb69ea392c1efe0362e953327bd2edd5b924e589ea304b759bda76ec",
+    "skills/resolve-github-issue/agents/openai.yaml": "8cf2450cde5dd9b9696b4161ae5800a13ad962baa01c0cb0eb2041f95501c0a1",
     "skills/resolve-github-issue/references/github-workflow.md": "fcb09bbf6364b28f541bfedf8bba1d68c58ef5c46118775808f742fd32b8febe"
   }
 }

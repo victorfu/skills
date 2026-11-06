@@ -1,5 +1,5 @@
 {
-  "name": "dev-workflow-kit",
+  "name": "devflow",
   "version": "0.4.0",
   "description": "Shared development workflow skills; each skill runs only under its explicit invocation contract.",
   "author": {
@@ -8,7 +8,7 @@
   "repository": "https://github.com/victorfu/skills",
   "skills": "./skills/",
   "interface": {
-    "displayName": "Dev Workflow Kit",
+    "displayName": "DevFlow",
     "shortDescription": "Shared development workflow skills; each skill runs only under its explicit invocation contract.",
     "brandColor": "#238636",
     "composerIcon": "./assets/icon.png",

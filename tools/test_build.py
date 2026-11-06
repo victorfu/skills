@@ -70,7 +70,7 @@ class BuildTests(unittest.TestCase):
         claude = self.root / 'dist/claude'
         manifest = json.loads((claude / '.claude-plugin/plugin.json').read_text(encoding='utf-8'))
         self.assertEqual(manifest['icon'], f'./assets/{build.CLAUDE_ICON}')
-        self.assertEqual(manifest['name'], 'dev-workflow-kit')
+        self.assertEqual(manifest['name'], 'devflow')
         self.assertNotIn('displayName', manifest)
         self.assertEqual((claude / 'assets' / build.CLAUDE_ICON).read_bytes(), (self.root / 'assets' / build.CLAUDE_ICON).read_bytes())
 
@@ -130,7 +130,7 @@ class BuildTests(unittest.TestCase):
     def test_reject_wrong_invocation_target(self):
         path = self.root / 'skills/resolve-github-issue/agents/openai.yaml'
         original = path.read_text(encoding='utf-8')
-        invocation = '$dev-workflow-kit:resolve-github-issue'
+        invocation = '$devflow:resolve-github-issue'
         for target in ('$resolve-github-issue', '$other-plugin:resolve-github-issue', invocation + '-other'):
             with self.subTest(target=target):
                 write_lf(path, original.replace(invocation, target))

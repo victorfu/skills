@@ -1,6 +1,6 @@
 interface:
   display_name: "Resolve GitHub Issue"
   short_description: "Verify a GitHub issue, then fix, test, review and open a PR"
-  default_prompt: "Use $dev-workflow-kit:resolve-github-issue to fully handle the issue number or URL I provide: verify it, then fix, test, review and open a PR."
+  default_prompt: "Use $devflow:resolve-github-issue to fully handle the issue number or URL I provide: verify it, then fix, test, review and open a PR."
 policy:
   allow_implicit_invocation: false
