@@ -33,7 +33,7 @@ claude plugin install dev-workflow-kit@victorfu-skills
 
 ```sh
 codex plugin marketplace add victorfu/skills
-codex plugin add victorfu-skills@victorfu-skills
+codex plugin add dev-workflow-kit@victorfu-skills
 ```
 
 安裝後重新啟動 Codex。Codex desktop 也可以從 Plugins 目錄安裝。
@@ -61,8 +61,8 @@ codex plugin marketplace add victorfu/skills --ref v0.1.0
 - **WSL 另算**：Claude Desktop 的 WSL session 官方明列不支援 plugins，不能套用 Windows 原生欄；這不等同於 WSL 裡的 Claude CLI 不支援。Cloud／Cowork 也不在此本機 Code session 矩陣內。
 - **三 OS CI 已通過的是打包測試**：Ubuntu 24.04、macOS 26 ARM64、Windows Server 2025，搭配 Python 3.10／3.12，共六組均通過產物檢查與 10 項單元測試。它不代表 Windows 10／11、所有 CPU 架構或 GUI／模型執行都測過。[CI 結果](https://github.com/victorfu/skills/actions/runs/40261949089)
 - **macOS CLI 實測範圍**：macOS 27.0.1 ARM64、Codex 0.164.0、Claude Code 2.1.310。兩邊均從 GitHub 安裝 `0.1.0`，並以本機 Git fixture 測試 `0.1.0 → 0.1.1`；已核對新程序的載入路徑、版本及內容 hash。`0.1.1` 只存在隔離 fixture，並未發布。
-- **Codex 已通過登入後的唯讀叫用**：Codex CLI 0.164.0 以既有 ChatGPT 登入實測 `$victorfu-skills:resolve-github-issue`，模型讀取正確 plugin 的 `SKILL.md`，並在缺少 repo 時要求補充資訊。Claude 的隔離叫用仍因未登入而失敗；兩邊均未驗證完整 issue → PR 流程或隱式叫用禁止。詳見[叫用驗證紀錄](docs/verification.md#codex-登入後叫用驗證2026-10-26)。
-- **名稱一致**：skill 名稱為 `resolve-github-issue`，Codex 顯示名稱為「Resolve GitHub Issue」；Codex 的 plugin 顯示名稱為「Dev Workflow Kit」，plugin 識別碼為 `victorfu-skills`；Claude Code 的 plugin 識別碼為 `dev-workflow-kit`，與其他 plugin 一樣採 kebab-case。兩邊的 marketplace 識別碼皆為 `victorfu-skills`。Codex 以 `victorfu-skills:resolve-github-issue`、Claude Code 以 `dev-workflow-kit:resolve-github-issue` 識別 skill，前綴是 plugin namespace，不是另一個 skill 名稱。
+- **Codex 已通過登入後的唯讀叫用**：Codex CLI 0.164.0 以既有 ChatGPT 登入實測 `$dev-workflow-kit:resolve-github-issue`，模型讀取正確 plugin 的 `SKILL.md`，並在缺少 repo 時要求補充資訊。Claude 的隔離叫用仍因未登入而失敗；兩邊均未驗證完整 issue → PR 流程或隱式叫用禁止。詳見[叫用驗證紀錄](docs/verification.md#codex-登入後叫用驗證2026-10-26)。
+- **名稱一致**：skill 名稱為 `resolve-github-issue`，Codex 顯示名稱為「Resolve GitHub Issue」；兩個 CLI 的 plugin 識別碼皆為 `dev-workflow-kit`（Codex 顯示為「Dev Workflow Kit」），marketplace 識別碼為 `victorfu-skills`。兩邊均以 `dev-workflow-kit:resolve-github-issue` 識別 skill，前綴是 plugin namespace，不是另一個 skill 名稱。
 
 官方依據：[Claude CLI 環境](https://code.claude.com/docs/en/setup)、[Claude Desktop plugins／WSL 限制](https://code.claude.com/docs/en/desktop#install-plugins)、[Claude Linux beta](https://code.claude.com/docs/en/desktop-linux)、[Codex CLI](https://learn.chatgpt.com/docs/codex/cli)、[Codex plugins](https://learn.chatgpt.com/docs/plugins)、[Codex Linux preview](https://learn.chatgpt.com/docs/linux/linux-app)。隔離方法、測試命令與尚未驗證項目見 [實測紀錄](docs/verification.md#隔離客戶端實測2026-10-26)。
 
@@ -77,10 +77,10 @@ Skill 只會在你明確叫用時執行；單純貼上 issue 網址不會觸發�
 /dev-workflow-kit:resolve-github-issue https://github.com/OWNER/REPO/issues/123
 
 # Codex plugin（或從 skill picker 選取對應項目）
-$victorfu-skills:resolve-github-issue https://github.com/OWNER/REPO/issues/123
+$dev-workflow-kit:resolve-github-issue https://github.com/OWNER/REPO/issues/123
 ```
 
-本 repo 以 plugin 發布，Codex 叫用與 `agents/openai.yaml` 的 `default_prompt` 統一使用 `$victorfu-skills:resolve-github-issue`，已在登入的 CLI 實測。此完整名稱可區別其他 plugin 中的同名 skill；若自行改為 standalone 安裝，須將叫用及 `default_prompt` 一併改成 `$resolve-github-issue`。
+本 repo 以 plugin 發布，Codex 叫用與 `agents/openai.yaml` 的 `default_prompt` 統一使用 `$dev-workflow-kit:resolve-github-issue`，已在登入的 CLI 實測。此完整名稱可區別其他 plugin 中的同名 skill；若自行改為 standalone 安裝，須將叫用及 `default_prompt` 一併改成 `$resolve-github-issue`。
 
 只想評估、不要改任何東西時，在指令後面加上「只評估，不要修改」，它就只會讀取與分析。
 
@@ -109,7 +109,7 @@ $victorfu-skills:resolve-github-issue https://github.com/OWNER/REPO/issues/123
 /dev-workflow-kit:address-review-feedback https://github.com/OWNER/REPO/pull/123 只評估 review 意見，不修改或發送任何內容。
 
 # Codex：先驗證，再修正本機程式碼
-$victorfu-skills:address-review-feedback 驗證下方 review 意見，修正成立的項目並執行相關測試。不要 commit、push 或回覆留言。
+$dev-workflow-kit:address-review-feedback 驗證下方 review 意見，修正成立的項目並執行相關測試。不要 commit、push 或回覆留言。
 
 # 任一客戶端：以上方對應的叫用指令加上
 https://github.com/OWNER/REPO/pull/123 驗證 review 意見，修正成立的項目、測試、commit 並 push 到我的既有 PR 分支。不要回覆留言或 resolve threads。
@@ -142,7 +142,7 @@ claude plugin uninstall dev-workflow-kit@victorfu-skills
 claude plugin marketplace remove victorfu-skills
 
 # Codex
-codex plugin remove victorfu-skills@victorfu-skills
+codex plugin remove dev-workflow-kit@victorfu-skills
 codex plugin marketplace remove victorfu-skills
 ```
 

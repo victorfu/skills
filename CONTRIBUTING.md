@@ -7,7 +7,7 @@ skills/<name>/                     The only hand-written source
   SKILL.md                         Frontmatter holds only name and description; the body is the full workflow
   references/                      Reference docs the skill links to
   agents/openai.yaml               Codex-only display name and invocation policy
-release.json                       Version and plugin metadata (name is the Codex plugin ID, displayName the Codex display name, claudeName the Claude plugin ID)
+release.json                       Version and plugin metadata (name is the plugin ID, marketplace the marketplace ID, displayName the Codex display name)
 assets/icon.svg                    Source for the Codex plugin icon; icon.png (512) and logo.png (1024) are exported from it
 tools/build.py                     Generates dist/ and both marketplaces; --check compares without writing
 tools/test_build.py                Packaging regression tests (run in a temporary directory)
@@ -74,7 +74,7 @@ Invoke `/dev-workflow-kit:resolve-github-issue`. After changing the source, run 
 
 ```sh
 codex plugin marketplace add /absolute/path/to/skills
-codex plugin add victorfu-skills@victorfu-skills
+codex plugin add dev-workflow-kit@victorfu-skills
 ```
 
 Codex copies the plugin into its own cache, so after changing the source you need to reinstall and restart Codex.
@@ -84,7 +84,7 @@ Before testing against real issues, use read-only mode ("assess only, don't chan
 ## Adding a skill
 
 1. Create `skills/<name>/SKILL.md`. Its frontmatter may contain only `name` (must equal the directory name, lowercase with hyphens) and `description`.
-2. Create `skills/<name>/agents/openai.yaml` with `interface.display_name`, `short_description` (25 to 64 characters), a `default_prompt` containing `$<plugin-name>:<name>`, and `policy.allow_implicit_invocation: false`. `<plugin-name>` must match `name` in `release.json`; this repo uses `$victorfu-skills:<name>`, and the build checks the full invocation name.
+2. Create `skills/<name>/agents/openai.yaml` with `interface.display_name`, `short_description` (25 to 64 characters), a `default_prompt` containing `$<plugin-name>:<name>`, and `policy.allow_implicit_invocation: false`. `<plugin-name>` must match `name` in `release.json`; this repo uses `$dev-workflow-kit:<name>`, and the build checks the full invocation name.
 3. Relative links in the `SKILL.md` body must point to files that actually exist inside the skill directory.
 4. Run the build and tests; `build.py` picks up every skill under `skills/` automatically.
 

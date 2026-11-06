@@ -130,7 +130,7 @@ class BuildTests(unittest.TestCase):
     def test_reject_wrong_invocation_target(self):
         path = self.root / 'skills/resolve-github-issue/agents/openai.yaml'
         original = path.read_text(encoding='utf-8')
-        invocation = '$victorfu-skills:resolve-github-issue'
+        invocation = '$dev-workflow-kit:resolve-github-issue'
         for target in ('$resolve-github-issue', '$other-plugin:resolve-github-issue', invocation + '-other'):
             with self.subTest(target=target):
                 write_lf(path, original.replace(invocation, target))

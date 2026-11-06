@@ -5,7 +5,7 @@
   },
   "plugins": [
     {
-      "name": "victorfu-skills",
+      "name": "dev-workflow-kit",
       "source": {
         "source": "local",
         "path": "./dist/codex"

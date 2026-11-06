@@ -33,7 +33,7 @@ You can also run `/plugin marketplace add victorfu/skills` and then `/plugin ins
 
 ```sh
 codex plugin marketplace add victorfu/skills
-codex plugin add victorfu-skills@victorfu-skills
+codex plugin add dev-workflow-kit@victorfu-skills
 ```
 
 Restart Codex after installing. Codex desktop can also install it from the Plugins directory.
@@ -61,8 +61,8 @@ The table separates what each client officially supports from what this repo has
 - **WSL is separate**: Claude Desktop's WSL sessions are officially listed as not supporting plugins, so the native Windows column does not apply to them. This does not mean the Claude CLI inside WSL lacks support. Cloud and Cowork sessions are also outside this local Code session matrix.
 - **The three-OS CI covers packaging tests**: Ubuntu 24.04, macOS 26 ARM64, and Windows Server 2025, each with Python 3.10 and 3.12. All six combinations pass the build-output checks and 10 unit tests. This does not mean Windows 10/11, every CPU architecture, or GUI/model execution has been tested. [CI run](https://github.com/victorfu/skills/actions/runs/40261949089)
 - **macOS CLI test scope**: macOS 27.0.1 ARM64, Codex 0.164.0, Claude Code 2.1.310. Both clients installed `0.1.0` from GitHub, and a `0.1.0 → 0.1.1` update was tested against a local Git fixture, confirming the new process's load path, version, and content hash. `0.1.1` existed only in the isolated fixture and was not published.
-- **Codex passed a signed-in, read-only invocation**: Codex CLI 0.164.0, using an existing ChatGPT sign-in, invoked `$victorfu-skills:resolve-github-issue`; the model read the correct plugin's `SKILL.md` and asked for more information when no repo was given. Claude's isolated invocation still fails because it is not signed in. Neither client has been verified on the full issue → PR flow or on blocking implicit invocation. See the [invocation verification log](docs/verification.md#codex-登入後叫用驗證2026-10-26) (in Traditional Chinese).
-- **Consistent naming**: the skill is `resolve-github-issue`, shown in Codex as "Resolve GitHub Issue"; in Codex the plugin is displayed as "Dev Workflow Kit" with plugin ID `victorfu-skills`, while in Claude Code the plugin ID is `dev-workflow-kit`, matching the kebab-case names of other plugins. The marketplace ID is `victorfu-skills` on both. Codex lists the skill as `victorfu-skills:resolve-github-issue` and Claude Code as `dev-workflow-kit:resolve-github-issue`; the prefix is the plugin namespace, not another skill name.
+- **Codex passed a signed-in, read-only invocation**: Codex CLI 0.164.0, using an existing ChatGPT sign-in, invoked `$dev-workflow-kit:resolve-github-issue`; the model read the correct plugin's `SKILL.md` and asked for more information when no repo was given. Claude's isolated invocation still fails because it is not signed in. Neither client has been verified on the full issue → PR flow or on blocking implicit invocation. See the [invocation verification log](docs/verification.md#codex-登入後叫用驗證2026-10-26) (in Traditional Chinese).
+- **Consistent naming**: the skill is `resolve-github-issue`, shown in Codex as "Resolve GitHub Issue"; the plugin ID is `dev-workflow-kit` on both CLIs (Codex displays it as "Dev Workflow Kit"), and the marketplace ID is `victorfu-skills`. Both CLIs list the skill as `dev-workflow-kit:resolve-github-issue`; the prefix is the plugin namespace, not another skill name.
 
 Official sources: [Claude CLI setup](https://code.claude.com/docs/en/setup), [Claude Desktop plugins / WSL limits](https://code.claude.com/docs/en/desktop#install-plugins), [Claude Linux beta](https://code.claude.com/docs/en/desktop-linux), [Codex CLI](https://learn.chatgpt.com/docs/codex/cli), [Codex plugins](https://learn.chatgpt.com/docs/plugins), [Codex Linux preview](https://learn.chatgpt.com/docs/linux/linux-app). For the isolation method, test commands, and what remains unverified, see the [test log](docs/verification.md#隔離客戶端實測2026-10-26) (in Traditional Chinese).
 
@@ -77,10 +77,10 @@ The skill runs only when you invoke it explicitly; pasting an issue URL on its o
 /dev-workflow-kit:resolve-github-issue https://github.com/OWNER/REPO/issues/123
 
 # Codex plugin (or pick the matching entry from the skill picker)
-$victorfu-skills:resolve-github-issue https://github.com/OWNER/REPO/issues/123
+$dev-workflow-kit:resolve-github-issue https://github.com/OWNER/REPO/issues/123
 ```
 
-This repo ships as a plugin, so Codex invocations and the `default_prompt` in `agents/openai.yaml` both use `$victorfu-skills:resolve-github-issue`, which has been tested in a signed-in CLI. The fully qualified name distinguishes it from same-named skills in other plugins. If you install it as a standalone skill instead, change both the invocation and `default_prompt` to `$resolve-github-issue`.
+This repo ships as a plugin, so Codex invocations and the `default_prompt` in `agents/openai.yaml` both use `$dev-workflow-kit:resolve-github-issue`, which has been tested in a signed-in CLI. The fully qualified name distinguishes it from same-named skills in other plugins. If you install it as a standalone skill instead, change both the invocation and `default_prompt` to `$resolve-github-issue`.
 
 To get an assessment without any changes, add "evaluate only, don't modify anything" after the command; it will then only read and analyze.
 
@@ -109,7 +109,7 @@ Use `address-review-feedback` with a PR URL or pasted feedback. Both skills requ
 /dev-workflow-kit:address-review-feedback https://github.com/OWNER/REPO/pull/123 Assess the feedback only; do not modify or post anything.
 
 # Codex: verify and fix locally
-$victorfu-skills:address-review-feedback Check the feedback below and apply justified local fixes with relevant tests. Do not commit, push or post replies.
+$dev-workflow-kit:address-review-feedback Check the feedback below and apply justified local fixes with relevant tests. Do not commit, push or post replies.
 
 # Either client: use its invocation above, followed by
 https://github.com/OWNER/REPO/pull/123 Verify the feedback, fix valid concerns, test, commit and push to my existing PR branch. Do not post replies or resolve threads.
@@ -142,7 +142,7 @@ claude plugin uninstall dev-workflow-kit@victorfu-skills
 claude plugin marketplace remove victorfu-skills
 
 # Codex
-codex plugin remove victorfu-skills@victorfu-skills
+codex plugin remove dev-workflow-kit@victorfu-skills
 codex plugin marketplace remove victorfu-skills
 ```
 
