@@ -25,6 +25,7 @@ class BuildTests(unittest.TestCase):
         shutil.copytree(build.ROOT / 'skills', self.root / 'skills')
         shutil.copytree(build.ROOT / 'assets', self.root / 'assets')
         shutil.copyfile(build.ROOT / 'release.json', self.root / 'release.json')
+        shutil.copyfile(build.ROOT / 'CHANGELOG.md', self.root / 'CHANGELOG.md')
         build.ROOT = self.root
         self.addCleanup(setattr, build, 'ROOT', self.original_root)
 
@@ -146,6 +147,14 @@ class BuildTests(unittest.TestCase):
                 write_lf(path, original.replace(invocation, target))
                 with self.assertRaisesRegex(ValueError, 'Missing plugin-qualified invocation name'):
                     self.run_build()
+
+    def test_reject_release_without_changelog_entry(self):
+        path = self.root / 'release.json'
+        release = json.loads(path.read_text(encoding='utf-8'))
+        release['version'] = '99.0.0'
+        write_lf(path, json.dumps(release))
+        with self.assertRaisesRegex(ValueError, 'CHANGELOG.md has no entry for 99.0.0'):
+            self.run_build()
 
     def test_reject_empty_frontmatter(self):
         write_lf(self.root / 'skills/resolve-github-issue/SKILL.md', '---\n\n---\nbody\n')

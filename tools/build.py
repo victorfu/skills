@@ -65,6 +65,8 @@ def expected_files():
         require(re.fullmatch(r'[a-z0-9]+(?:-[a-z0-9]+)*', release[key]), f'Invalid package {key}')
     require(re.fullmatch(r'(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)', release['version']), 'Use a stable SemVer version')
     require(release['author'].get('name') and release['description'], 'Missing author/description')
+    changelog = ROOT / 'CHANGELOG.md'
+    require(changelog.is_file() and re.search(rf"^## {re.escape(release['version'])}(?: |$)", changelog.read_text(encoding='utf-8'), re.M), f"CHANGELOG.md has no entry for {release['version']}")
     output = {}
     hashes = {platform: {} for platform in PLATFORMS}
     skills = sorted(p for p in (ROOT / 'skills').iterdir() if not hidden(p, ROOT / 'skills'))
