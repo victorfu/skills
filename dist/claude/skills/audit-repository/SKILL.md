@@ -290,6 +290,8 @@ Do not claim exhaustive review when:
 
 Lead with findings, sorted by severity and then confidence. Do not bury confirmed bugs behind a general summary.
 
+Write every sentence of the report in Traditional Chinese, including when the request itself is in English; only an explicit request for another report language changes this. Keep the headings and field labels of the template below as written.
+
 ```markdown
 # Repository Bug Audit
 

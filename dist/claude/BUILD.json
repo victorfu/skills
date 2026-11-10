@@ -6,7 +6,7 @@
   "sha256": {
     "skills/address-review-feedback/LICENSE": "a37e0e9697144819e1d965176ac4ae5bc3fa02d11e7812036bbcadf6dafe2400",
     "skills/address-review-feedback/SKILL.md": "2c5973c58b3222cc98c7d050ce90583e246d708beb68c940466ee8de90e60af3",
-    "skills/audit-repository/SKILL.md": "5fe0da33aec21d4fb3d84211f47b6dd8e4817580654b4a02098365cf35b94c9c",
+    "skills/audit-repository/SKILL.md": "3ffead9db7e09c07657e3a685536e198f8032d87492d3cfe0993ddec6120685e",
     "skills/audit-repository/assets/icon.svg": "8936b24f674a1250d999e2c2b5901374fb4240426f32bd1ae340c352a90d617d",
     "skills/audit-repository/scripts/repo_inventory.py": "e1e0af866f879ffe3234952ca33ad1eb50c560a84a5b49f228aec067d788f58d",
     "skills/resolve-github-issue/SKILL.md": "2d011211e4740757fb9587dc885c4065eb72df0dbd8aeb41d1263ce296ed7c1c",
