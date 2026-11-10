@@ -1,7 +1,7 @@
 ---
 disable-model-invocation: true
 name: resolve-github-issue
-description: Only when the user explicitly invokes resolve-github-issue, verify whether the given issue number or URL is valid, mark it in progress, then fix, test, review, commit, push and open a PR. If the user only asks for a summary, translation, assessment or read-only analysis, respect the narrowed scope and do not start the write workflow.
+description: Verify a GitHub issue with evidence, then fix, test, review and open a PR. Honors a narrowed scope such as assessment only.
 ---
 
 # resolve-github-issue

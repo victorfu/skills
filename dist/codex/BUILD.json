@@ -5,16 +5,16 @@
   "platform": "codex",
   "sha256": {
     "skills/address-review-feedback/LICENSE": "a37e0e9697144819e1d965176ac4ae5bc3fa02d11e7812036bbcadf6dafe2400",
-    "skills/address-review-feedback/SKILL.md": "d157b9517f4e77be8f0290eda13056b4ba5731af9bfbaef825f39e79f44e88f2",
+    "skills/address-review-feedback/SKILL.md": "2c9d201ed336e7908fd8d51c6dec5ea732138580bcb68c6d2a0a2080c11743a0",
     "skills/address-review-feedback/agents/openai.yaml": "f2a9709b8f2b1d8fc9c011c8b8218f415fc5c69a593ace8e46ec90dd427e81d6",
     "skills/audit-repository/SKILL.md": "96618f6809622bea8dff01dddc6511ed82fb2dd2ee95d6419ffc2c875b5b576a",
     "skills/audit-repository/agents/openai.yaml": "d869ef58b6b24baad297e4dde258fe88211a414146df2b3e08cf159da3337ce9",
     "skills/audit-repository/assets/icon.svg": "8936b24f674a1250d999e2c2b5901374fb4240426f32bd1ae340c352a90d617d",
     "skills/audit-repository/scripts/repo_inventory.py": "4f44fdce10fa58027435f7232a9bab0262f1476eb8d356dd1fe00212a37f467f",
-    "skills/resolve-github-issue/SKILL.md": "888350d65c32b3c1d9cefb186056db3f6af915ba6a4be3f8967bde680dcba760",
+    "skills/resolve-github-issue/SKILL.md": "29df232a4cf296f02ba2a85a633d5ae353cbd9148673b1e7c9cfdcf725ca7625",
     "skills/resolve-github-issue/agents/openai.yaml": "8cf2450cde5dd9b9696b4161ae5800a13ad962baa01c0cb0eb2041f95501c0a1",
     "skills/resolve-github-issue/references/github-workflow.md": "fcb09bbf6364b28f541bfedf8bba1d68c58ef5c46118775808f742fd32b8febe",
-    "skills/watch-pr-feedback/SKILL.md": "28ed9f8121d8241ca36b855fed51f5bc1709b6f8467940010efbcc6272e58225",
+    "skills/watch-pr-feedback/SKILL.md": "294c28e110d72515a179cefc745f54ea917c4e892e62eba8a8a5bb6d187beb0b",
     "skills/watch-pr-feedback/agents/openai.yaml": "49450c54ac604d6530bba9ff1374e206db2dda7c131c6e32d1879ba9b437e337",
     "skills/watch-pr-feedback/scripts/watch_pr.py": "4090ad23d4d814dc937a01c68aa463064daad7ea501e7b4eb278deca085e28e6"
   }
