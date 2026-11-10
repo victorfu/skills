@@ -1,6 +1,6 @@
 ---
 name: watch-pr-feedback
-description: Only when the user explicitly invokes watch-pr-feedback, monitor an existing GitHub pull request with gh and, whenever new review comments or failing CI appear, handle them with the address-review-feedback workflow; repeat until no new feedback arrives within the quiet window and CI is not pending, the PR closes, or a stop limit is reached. Honor explicit limits on intervals, duration, rounds or the scope passed to address-review-feedback.
+description: Watch a GitHub PR and address each new batch of review comments or failing CI until the PR goes quiet, closes or reaches a stop limit.
 ---
 
 # watch-pr-feedback
