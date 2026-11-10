@@ -123,7 +123,12 @@ def git_paths(root: Path) -> list[str]:
 def non_git_paths(root: Path) -> tuple[list[str], list[dict[str, str]]]:
     files: list[str] = []
     pruned: list[dict[str, str]] = []
-    for current, dirs, names in os.walk(root, topdown=True, followlinks=False):
+
+    def fail_on_scan_error(error: OSError) -> None:
+        # An incomplete traversal must not produce a successful coverage ledger.
+        raise error
+
+    for current, dirs, names in os.walk(root, topdown=True, followlinks=False, onerror=fail_on_scan_error):
         current_path = Path(current)
         kept_dirs: list[str] = []
         for dirname in sorted(dirs):
@@ -221,6 +226,17 @@ def classify(root: Path, rel_path: str) -> dict[str, Any]:
             "scope": "review",
             "status": "unreadable",
             "reason": f"read failed: {read_error}",
+        })
+        return record
+
+    # UTF-16/32 source contains NUL bytes. Keep BOM-marked files visible for an
+    # explicit encoding/scope decision instead of silently excluding them.
+    if suffix not in BINARY_EXTENSIONS and sample.startswith((b"\xff\xfe", b"\xfe\xff", b"\x00\x00\xfe\xff")):
+        record.update({
+            "kind": "encoded-text",
+            "scope": "decision",
+            "status": "pending-decision",
+            "reason": "UTF-16/32 BOM detected; decode and confirm review scope before excluding",
         })
         return record
 

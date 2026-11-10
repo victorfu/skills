@@ -1,13 +1,20 @@
 """Exercise the shipped audit helper against isolated Git repositories."""
+import contextlib
+import importlib.util
+import io
 import json
 from pathlib import Path
 import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 HELPER = ROOT / 'skills/audit-repository/scripts/repo_inventory.py'
+SPEC = importlib.util.spec_from_file_location('repo_inventory', HELPER)
+inventory = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(inventory)
 
 
 class InventoryTests(unittest.TestCase):
@@ -73,6 +80,48 @@ class InventoryTests(unittest.TestCase):
         result = self.run_helper('create', '--repo', str(self.repo), '--out', str(output), expected=1)
         self.assertIn('outside the target repository', result.stderr)
         self.assertFalse(output.exists())
+
+    def test_unicode_bom_source_requires_review_decision(self):
+        for encoding, bom in (
+            ('utf-16-le', b'\xff\xfe'), ('utf-16-be', b'\xfe\xff'),
+            ('utf-32-le', b'\xff\xfe\x00\x00'), ('utf-32-be', b'\x00\x00\xfe\xff'),
+        ):
+            with self.subTest(encoding=encoding):
+                source = self.repo / 'deploy.ps1'
+                source.write_bytes(bom + ('Write-Output "hello"\n' * 1000).encode(encoding))
+                ledger = self.create()
+                record = next(item for item in ledger['files'] if item['path'] == 'deploy.ps1')
+                self.assertEqual(record['status'], 'pending-decision')
+                # Complete every other entry; this script must still prevent completion.
+                others = [item['path'] for item in ledger['files']
+                          if item['path'] != 'deploy.ps1' and item['status'].startswith('pending')]
+                for path in others:
+                    self.run_helper('mark', '--out', str(self.out), '--path', path, '--status', 'reviewed')
+                result = self.run_helper('status', '--out', str(self.out), '--show-pending', expected=2)
+                self.assertIn('deploy.ps1', result.stdout)
+
+    def test_directory_scan_errors_fail_creation(self):
+        source = (self.base / 'source').resolve()
+        source.mkdir()
+        nested = source / 'src'
+        nested.mkdir()
+        (nested / 'app.py').write_text('print(1)\n', encoding='utf-8')
+        real_scandir = inventory.os.scandir
+        for denied in (source, nested):
+            with self.subTest(denied=denied):
+                def scandir(path):
+                    if Path(path) == denied:
+                        raise PermissionError(13, 'Permission denied', str(path))
+                    return real_scandir(path)
+
+                stderr = io.StringIO()
+                with mock.patch.object(inventory, 'git_root', return_value=None), \
+                        mock.patch.object(inventory.os, 'scandir', side_effect=scandir), \
+                        contextlib.redirect_stderr(stderr), contextlib.redirect_stdout(io.StringIO()):
+                    result = inventory.main(['create', '--repo', str(source), '--out', str(self.out)])
+                self.assertEqual(result, 1)
+                self.assertIn(str(denied), stderr.getvalue())
+                self.assertFalse((self.out / 'ledger.json').exists())
 
     def test_unknown_path_does_not_partially_update_ledger(self):
         self.create()
