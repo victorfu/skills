@@ -1,0 +1,21 @@
+{
+  "number": 57,
+  "url": "https://github.com/example-org/shop/issues/57",
+  "state": "CLOSED",
+  "stateReason": "COMPLETED",
+  "closedAt": "2026-10-02T09:14:00Z",
+  "title": "Splitting a bill loses a cent",
+  "author": "dana-lee",
+  "labels": [],
+  "body": "Splitting 1.00 between three people charges 0.33 each, so one cent is never collected.\n\nSteps: call checkout.split_bill(100, 3).\nExpected: [34, 33, 33], as the README says.\nActual: [33, 33, 33].",
+  "comments": [
+    {
+      "author": "sam-ortiz",
+      "body": "Same here with split_bill(1000, 3): I get three shares of 333."
+    },
+    {
+      "author": "maintainer-jo",
+      "body": "Leftover cents now go to the earliest shares on main. Closing."
+    }
+  ]
+}

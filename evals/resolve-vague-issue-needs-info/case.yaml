@@ -1,0 +1,31 @@
+schema_version: "1.1"
+name: resolve-vague-issue-needs-info
+tags: [resolve-github-issue, read-only]
+context:
+  scaffold_script: scaffold.sh
+execution:
+  prompt: |
+    /devflow:resolve-github-issue https://github.com/example-org/shop/issues/59 Evaluate only; do not modify anything. I exported the issue to issue-59.json in the current directory, where the repository is also checked out.
+  max_turns: 25
+  timeout_seconds: 600
+  allowed_tools: [Read, Glob, Grep, Skill]
+  disallowed_tools: [Agent, Task]
+graders:
+  - name: verdict-needs-info
+    type: llm
+    criteria: |
+      The issue only says totals are "sometimes wrong on the tablet", with no input, expected value, actual value, version or steps. The repository has no tablet or display code, only two small Python modules.
+      PASS if the verdict is NEEDS_INFO and the reply does not call the report false or invalid.
+      FAIL if the verdict is VALID, INVALID or ALREADY_FIXED.
+  - name: says-what-was-checked-and-what-is-missing
+    type: llm
+    criteria: |
+      The skill requires a NEEDS_INFO result to state what was checked and the minimum missing information.
+      PASS if the reply both says what it examined in the repository and asks for specific missing facts (for example the amounts and number of people involved, the expected and actual totals, or steps to reproduce).
+      FAIL if it only asks for "more information" in general, or does not say what was checked.
+  - name: does-not-assert-an-unreported-cause
+    type: llm
+    criteria: |
+      pricing.split_cents drops the remainder for uneven splits. That may or may not be what the reporter saw; the issue gives no data linking them.
+      PASS if the reply either does not mention it, or offers it as a possible cause to be confirmed with the reporter.
+      FAIL if the reply states as fact that this defect is the cause of the reported problem.

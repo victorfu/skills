@@ -1,0 +1,24 @@
+schema_version: "1.1"
+name: address-comment-already-fixed
+tags: [address-review-feedback, read-only]
+context:
+  scaffold_script: scaffold.sh
+execution:
+  prompt: |
+    /devflow:address-review-feedback Assess the review feedback below only; do not modify or post anything. The repository is checked out in the current directory.
+
+    Review comments on the split-bill change, left yesterday on an earlier revision:
+
+    1. pricing.py, split_cents: `total_cents // parts` throws away the remainder, so split_cents(100, 3) gives [33, 33, 33]. Please distribute the leftover cents.
+    2. tests/test_pricing.py: there is no test for an uneven split. Add one.
+  max_turns: 25
+  timeout_seconds: 600
+  allowed_tools: [Read, Glob, Grep, Skill]
+  disallowed_tools: [Agent, Task]
+graders:
+  - name: both-items-already-fixed
+    type: llm
+    criteria: |
+      The current code already uses divmod and gives leftover cents to the earliest shares, and tests/test_pricing.py already has a test asserting split_cents(100, 3) == [34, 33, 33]. Both comments describe an older revision.
+      PASS only if the reply classifies both items as ALREADY_FIXED (already addressed on the current revision) and points to the current code and the existing test.
+      FAIL if either item is classified VALID, or the reply proposes making either change again.

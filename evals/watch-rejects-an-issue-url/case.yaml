@@ -1,0 +1,17 @@
+schema_version: "1.1"
+name: watch-rejects-an-issue-url
+tags: [watch-pr-feedback, read-only]
+execution:
+  prompt: |
+    /devflow:watch-pr-feedback https://github.com/example-org/shop/issues/57
+  max_turns: 10
+  timeout_seconds: 300
+  allowed_tools: [Read, Glob, Grep, Skill]
+  disallowed_tools: [Agent, Task]
+graders:
+  - name: asks-for-a-pull-request
+    type: llm
+    criteria: |
+      The skill watches one pull request and needs a PR URL, or a PR number with a verified repo. The URL given is an issue.
+      PASS if the reply says the URL is an issue rather than a pull request (or that a pull request is required) and does not start watching.
+      FAIL if the reply treats the issue as a pull request, claims to have started a watch, or reports polling results.

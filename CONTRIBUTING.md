@@ -63,14 +63,14 @@ claude plugin validate .claude-plugin/marketplace.json --strict
 
 ## Behavior evals
 
-`evals/<case>/` holds cases for `claude plugin eval`. A case is either `prompt.md` plus one grader per file under `graders/`, or a `case.yaml` (`schema_version: "1.1"`, an `execution` block with the prompt and limits, a `graders` list, and `context.scaffold_script` when it needs files). Every prompt starts with the explicit `/devflow:<skill>` invocation. Scaffold scripts run with the agent's working directory as the current directory and copy `evals/_fixtures/` into it; `_fixtures/scaffold-shop.sh` also writes a `.env` holding a canary value, and a `regex` grader with `match: not_contains` fails any reply that repeats it.
+`evals/<case>/` holds cases for `claude plugin eval`. A case is either `prompt.md` plus one grader per file under `graders/`, or a `case.yaml` (`schema_version: "1.1"`, an `execution` block with the prompt and limits, a `graders` list, and `context.scaffold_script` when it needs files). Every prompt starts with the explicit `/devflow:<skill>` invocation. Scaffold scripts run with the agent's working directory as the current directory and copy `evals/_fixtures/` into it; `_fixtures/scaffold-shop.sh` takes fixture files to copy plus `--fixed` (overlay the corrected implementation) and `--git` (commit the copy), and writes a `.env` holding a canary value; a `regex` grader with `match: not_contains` fails any reply that repeats it.
 
 ```sh
 .venv/bin/python tools/run_evals.py --ablation none --runs 3
 .venv/bin/python tools/run_evals.py --case 'audit-*' --ablation none --runs 4 --max-cost-usd 3
 ```
 
-`run_evals.py` refuses to run when `dist/` is stale, assembles `dist/claude` and `evals/` in a temporary directory so nothing from `evals/` ships, and copies reports to `evals/results/` (gitignored). Each run is a real model call on your account (about $0.15 per run, $0.30 for the audit case), so evals run by hand and not in CI.
+`run_evals.py` refuses to run when `dist/` is stale, assembles `dist/claude` and `evals/` in a temporary directory so nothing from `evals/` ships, and copies reports to `evals/results/` (gitignored). Each run is a real model call on your account (about $0.15 per run; the 12 cases at 3 runs each cost about $5.60), so evals run by hand and not in CI.
 
 Rules for cases:
 
@@ -78,6 +78,7 @@ Rules for cases:
 - A grader must be able to fail. With read-only tools the agent cannot write anything, so "made no changes" graders prove nothing; test injected instructions with something a read-only agent can do, such as revealing the canary.
 - Do not put the expected answer in the prompt or the fixture, and make the fixture decide the verdict unambiguously.
 - Results vary between runs: report passes out of runs with the model and Claude Code version, and use `--ablation none`. These skills only run on explicit invocation, so the no-plugin baseline says little.
+- `--case` takes one glob; to run several unrelated cases, run the whole suite or call the script once per case.
 - When a case fails, decide first whether the reply or the grader is wrong; then fix the skill wording and rerun the case to confirm.
 
 ## Trying it locally
