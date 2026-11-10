@@ -14,9 +14,9 @@
     "skills/resolve-github-issue/references/github-workflow.md": "a26fa99fa06654009ff1df730e0efc1a2f3e8a44730ccf798c7e3281f82db6c2",
     "skills/resolve-github-issue/references/reproduction.md": "ee82d4eb26ab53d4bcccba71c3d2c92889ac1a10ecbe749627d06d7b1fceda1d",
     "skills/watch-pr-feedback/SKILL.md": "475e804a0573c38ad4295974584ead4737043cc01db28fc310132b9f811f2143",
-    "skills/watch-pr-feedback/references/hybrid.md": "09da0e52721580404f6c6a93c78d0697ada5f3ec7dd3bcf3e02f6f3e6202f8f9",
-    "skills/watch-pr-feedback/scripts/hybrid_watch.py": "064bfc0f8c6f3dd1dc4bc32ea34be4ef90be595d3f814ea73d984522aba3f707",
-    "skills/watch-pr-feedback/scripts/watch_pr.py": "9dab930eecb160c6ddeb7b5429bbbb11ff3ad8b23d635d7fe68950557004a237",
-    "skills/watch-pr-feedback/scripts/webhook_receiver.py": "01269af04ca11f61812853b3ffad1375e03e5ec80bb53f628efc32db3d948f4f"
+    "skills/watch-pr-feedback/references/hybrid.md": "324a427397d83799329488f82d16d76634b94de08d65e2f9447c0d679bb6b8d3",
+    "skills/watch-pr-feedback/scripts/hybrid_watch.py": "330876dfce1b19c7767a6e19292fdcdb2c4a321d4050a3abc074cdfbf14c922b",
+    "skills/watch-pr-feedback/scripts/watch_pr.py": "2a1a5e3a62bfb59d6aa2b5105fa51beb4ddbb21ffa745379798dd57fa50f49bd",
+    "skills/watch-pr-feedback/scripts/webhook_receiver.py": "3cb9e6b2a85ab391190e51b19e3aa012e169c0d55c55ee3a1ef2a87e364591b6"
   }
 }

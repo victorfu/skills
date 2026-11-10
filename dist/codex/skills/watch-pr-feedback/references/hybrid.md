@@ -8,6 +8,8 @@ Verify `gh webhook forward --help`. If the extension is missing, install with `g
 
 Run the receiver in a managed background command, keeping its process/session handle so it can be stopped. On Windows, if using `Start-Process`, use `-WindowStyle Hidden`. Python commands below can use `python` or `py -3` as available.
 
+The receiver exits 0 only for a requested stop or its lifetime limit. If `gh webhook forward` cannot start or exits (missing extension, no webhook access, another session already forwarding), the receiver exits 1, prints the reason on stderr and records it as `reason` in the signal file; the forwarder's own error output is kept in `<scratch>/signal.json.log`. Check shortly after starting that the receiver is still running; if it is not, report that reason and continue with the polling fallback.
+
 ```sh
 python <skill-dir>/scripts/webhook_receiver.py <PR-URL> --signal <scratch>/signal.json --lifetime 14400
 ```
@@ -24,7 +26,7 @@ python <skill-dir>/scripts/watch_pr.py <PR-URL> --mode hybrid \
   --reconcile 300 --interval 60 --settle 60 --quiet 600 --max-wait 540
 ```
 
-Reuse author filters and timing overrides on every invocation. `poll` remains the default when `--mode` is omitted. Hybrid always queries on startup and after an address round; healthy forwarding wakes it early, otherwise full reconciliation runs every 300 seconds. A missing, stopped or stale receiver falls back to the 60-second interval. A receiver process can remain alive while its upstream connection is unhealthy, so periodic reconciliation always remains enabled. Settle, quiet and max-wait have independent deadlines and each causes a fresh query before a decision. This is API reconciliation, not guaranteed replay of transient events that disappeared before a query.
+Reuse author filters and timing overrides on every invocation. `poll` remains the default when `--mode` is omitted. Hybrid always queries on startup and after an address round; healthy forwarding wakes it early, otherwise full reconciliation runs every 300 seconds. A missing, stopped or stale receiver falls back to the 60-second interval. Each `waiting` event carries `receiver_active`; when it is false, `receiver_reason` says why. Tell the user when a watch ran on the polling fallback instead of describing it as hybrid. A receiver process can remain alive while its upstream connection is unhealthy, so periodic reconciliation always remains enabled. Settle, quiet and max-wait have independent deadlines and each causes a fresh query before a decision. This is API reconciliation, not guaranteed replay of transient events that disappeared before a query.
 
 `baseline`, `feedback` and `ci_failed` carry `batch_id`. They are durably saved before output and re-emitted until acknowledged. Follow the main skill's event table; inspect baseline feedback and perform an address round when needed, then acknowledge even if baseline required no action. Complete and record all justified fixes/replies before acknowledging:
 
@@ -36,7 +38,7 @@ python <skill-dir>/scripts/watch_pr.py <PR-URL> --mode hybrid \
 
 This acknowledges and resumes waiting in the same invocation; repeat timing/author overrides here too. Retrying the last successful acknowledgment is safe. Unknown IDs fail rather than discard work. `waiting`, `quiet` and `closed` need no acknowledgment. When stopping with incomplete work, leave its batch unacknowledged and report it.
 
-On restart, read the durable batch and round records, then inspect current threads, branch, commits and CI before continuing. A replay means delivery was not acknowledged; it does not prove that earlier pushes/replies failed. Pending feedback may refer to an older head and must be reverified under the address workflow. Closed PRs stop immediately; pending CI for an obsolete head is discarded and current-head CI is reconciled. Full comment content is versioned, including edits beyond emitted excerpts. Settle progress survives helper restarts. Preserve state on errors; do not delete it to bypass a recovery problem.
+On restart, read the durable batch and round records, then inspect current threads, branch, commits and CI before continuing. A replay means delivery was not acknowledged; it does not prove that earlier pushes/replies failed. Pending feedback may refer to an older head and must be reverified under the address workflow. Closed PRs stop immediately; pending CI for an obsolete head is discarded and current-head CI is reconciled. Comment text and review verdicts are versioned in full, including edits beyond emitted excerpts; a comment whose diff position moves or becomes outdated after a push is not delivered again. Settle progress survives helper restarts. Preserve state on errors; do not delete it to bypass a recovery problem.
 
 OS locks prevent simultaneous hybrid consumers or receivers sharing their respective files and release on process exit/crash. The round and total watch limits remain the agent's responsibility, as in poll mode.
 
