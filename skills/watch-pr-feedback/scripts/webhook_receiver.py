@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """Local development receiver for gh webhook forward; stores wakeups, not work."""
 import argparse
-from http.server import BaseHTTPRequestHandler, HTTPServer
+import http.server
+from http.server import BaseHTTPRequestHandler
 import json
 import os
 from pathlib import Path
 import secrets
+import socketserver
 import subprocess
 import sys
 import time
@@ -13,6 +15,14 @@ import time
 from watch_pr import save_state, parse_target
 
 EVENTS = 'pull_request,pull_request_review,pull_request_review_comment,issue_comment,check_run,check_suite,status,workflow_run'
+
+
+class HTTPServer(http.server.HTTPServer):
+    def server_bind(self):
+        # The stock server resolves its own host name while binding, which can
+        # take several seconds on macOS; a loopback receiver has no use for it.
+        socketserver.TCPServer.server_bind(self)
+        self.server_name, self.server_port = self.server_address[:2]
 
 
 def log_tail(path):

@@ -17,6 +17,6 @@
     "skills/watch-pr-feedback/references/hybrid.md": "324a427397d83799329488f82d16d76634b94de08d65e2f9447c0d679bb6b8d3",
     "skills/watch-pr-feedback/scripts/hybrid_watch.py": "71d9864160c602a13ddbd7d471b99fcc4b112ea8470309e4e5e9b17fc5551a8c",
     "skills/watch-pr-feedback/scripts/watch_pr.py": "2a1a5e3a62bfb59d6aa2b5105fa51beb4ddbb21ffa745379798dd57fa50f49bd",
-    "skills/watch-pr-feedback/scripts/webhook_receiver.py": "187151da44ca61f8d6343b7bb022fe746a4ceeb7912e077cbd3360b8489638c3"
+    "skills/watch-pr-feedback/scripts/webhook_receiver.py": "3cb9e6b2a85ab391190e51b19e3aa012e169c0d55c55ee3a1ef2a87e364591b6"
   }
 }

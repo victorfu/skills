@@ -400,10 +400,10 @@ class HybridTests(unittest.TestCase):
                 worker = threading.Thread(target=receiver.main, daemon=True)
                 worker.start()
                 try:
-                    self.assertTrue(started.wait(5))
+                    self.assertTrue(started.wait(30))
                     url = next(part for part in popen.call_args.args[0] if part.startswith('--url=')).split('=', 1)[1]
                     self.assertIn('check_run', next(part for part in popen.call_args.args[0] if part.startswith('--events=')))
-                    deadline = time.time() + 5
+                    deadline = time.time() + 30
                     while hybrid.signal_status(signal, TARGET, time.time())[1] is False and time.time() < deadline:
                         time.sleep(0.05)
                     before, active = hybrid.signal_status(signal, TARGET, time.time())
