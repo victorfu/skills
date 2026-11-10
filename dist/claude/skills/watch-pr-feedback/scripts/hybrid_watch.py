@@ -16,6 +16,16 @@ def versions(items):
             for item in items}
 
 
+def upgrade_seen(seen, items, current):
+    # State written before versions() narrowed its input hashed the whole item.
+    # An item that still matches that hash is unchanged, not new feedback.
+    for item in items:
+        key = item['key']
+        if seen.get(key) not in (None, current[key]) and seen[key] == hashlib.sha256(
+                json.dumps(item, sort_keys=True).encode()).hexdigest():
+            seen[key] = current[key]
+
+
 def snapshot(host, repo, number, ignored):
     # Keep full bodies for versioning; emitted excerpts remain bounded.
     for _ in range(3):
@@ -99,6 +109,7 @@ def evaluate(state, pr, items, checks, now, quiet, settle):
         else:
             return pending['event']
     current = versions(items)
+    upgrade_seen(state['seen_versions'], items, current)
     fresh = {key: value for key, value in current.items()
              if state['seen_versions'].get(key) != value}
     if fresh != state.get('settling', {}):

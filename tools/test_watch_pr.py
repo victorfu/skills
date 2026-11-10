@@ -73,6 +73,22 @@ class HybridTests(unittest.TestCase):
         verdict = hybrid.evaluate(value, pushed, [comment, dict(review, state='CHANGES_REQUESTED')], [], 5, 600, 0)
         self.assertEqual([item['key'] for item in verdict['items']], ['review:1'])
 
+    def test_state_from_before_the_hash_change_does_not_redeliver(self):
+        comment = dict(ITEM, path='a.py', line=10)
+        whole_item = hybrid.hashlib.sha256(json.dumps(comment, sort_keys=True).encode()).hexdigest()
+        value = state()
+        value['seen_versions'] = {comment['key']: whole_item}
+        self.assertIsNone(hybrid.evaluate(value, PR, [comment], [], 1, 600, 0))
+        self.assertEqual(value['seen_versions'], hybrid.versions([comment]))
+        # A batch staged by the old code is acknowledged with old-format hashes.
+        value = state()
+        value['pending'] = {'event': {'event': 'feedback', 'batch_id': 'old'},
+                            'versions': {comment['key']: whole_item}, 'ci_head': None}
+        hybrid.acknowledge(value, 'old', 1)
+        self.assertIsNone(hybrid.evaluate(value, PR, [comment], [], 2, 600, 0))
+        edited = hybrid.evaluate(value, PR, [dict(comment, body='changed')], [], 3, 600, 0)
+        self.assertEqual(edited['event'], 'feedback')
+
     def test_equal_count_changed_batch_restarts_settle(self):
         value = state()
         hybrid.evaluate(value, PR, [ITEM], [], 0, 600, 60)
