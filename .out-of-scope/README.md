@@ -7,3 +7,4 @@ A record has three parts: the decision in one sentence, **Why this is out of sco
 - [implicit-invocation.md](implicit-invocation.md)
 - [merging-and-enabling-auto-fix.md](merging-and-enabling-auto-fix.md)
 - [shared-model-invoked-skill.md](shared-model-invoked-skill.md)
+- [single-source-packaging.md](single-source-packaging.md)
