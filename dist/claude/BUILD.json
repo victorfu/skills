@@ -7,9 +7,10 @@
     "skills/address-review-feedback/LICENSE": "a37e0e9697144819e1d965176ac4ae5bc3fa02d11e7812036bbcadf6dafe2400",
     "skills/address-review-feedback/SKILL.md": "57e8533daaad3c7bc171c4a4d8cc4720ef85333b1f3b1d5ed722f994cea4f7cf",
     "skills/address-review-feedback/references/github-operations.md": "ac070170eeabedab94c201cf77d56eb04dad87e579f28b71973bde820fd80d18",
-    "skills/resolve-github-issue/SKILL.md": "e180a684a12f2b53067de02a662223f01608558f30ea5e31cd5600bcf28e2e5d",
-    "skills/resolve-github-issue/references/github-workflow.md": "fcb09bbf6364b28f541bfedf8bba1d68c58ef5c46118775808f742fd32b8febe",
+    "skills/resolve-github-issue/SKILL.md": "94813ca9a67e4cd8e8bdd7b40d3951f8b2a1e671009347f6729e7c340c18efab",
+    "skills/resolve-github-issue/references/github-workflow.md": "a65d7a999e99a7e138de6da770b929d71033ad14582901adaef22eed27e3f8c5",
     "skills/resolve-github-issue/references/pr-auto-fix.md": "9cb980add9f2d5cd41f22631bc2b274ce8879888b23686d6539edec1ae435b8f",
+    "skills/resolve-github-issue/references/pr-body.md": "b97aca5ef6b451b8fd8d62bc36c2c8c05e1dda1f9dad10df9f403ad4f127862c",
     "skills/resolve-github-issue/references/stopping-and-resuming.md": "c5fb7fdda6f09ca839b3d9748cf1c669ee27bbdcd4fbce29fc5b39c3da083ce4",
     "skills/watch-pr-feedback/SKILL.md": "e568d19f3f5dfe12e4ba6a96058029f5587a53839bdc98e651ac681866029f9e",
     "skills/watch-pr-feedback/scripts/watch_pr.py": "4090ad23d4d814dc937a01c68aa463064daad7ea501e7b4eb278deca085e28e6"
