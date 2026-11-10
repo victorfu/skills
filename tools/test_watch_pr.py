@@ -1,6 +1,6 @@
 """Offline regression tests: no GitHub credentials, pushes or live webhooks."""
 import argparse
-from contextlib import redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 import io
 import json
 from pathlib import Path
@@ -8,6 +8,7 @@ import subprocess
 import sys
 import tempfile
 import threading
+import time
 import unittest
 from unittest.mock import patch
 from urllib.error import HTTPError
@@ -51,10 +52,26 @@ class HybridTests(unittest.TestCase):
         value = state()
         event = hybrid.evaluate(value, PR, [original], [], 0, 600, 0)
         self.assertLess(len(event['items'][0]['body']), 400)
+        # Edited while the batch is still pending: the batch replays, the edit follows the ack.
+        self.assertEqual(hybrid.evaluate(value, PR, [changed], [], 1, 600, 0), event)
         hybrid.acknowledge(value, event['batch_id'], 1)
         event2 = hybrid.evaluate(value, PR, [changed], [], 2, 600, 0)
         self.assertEqual(event2['event'], 'feedback')
         self.assertNotEqual(event['batch_id'], event2['batch_id'])
+
+    def test_moved_or_outdated_comment_is_not_new_feedback(self):
+        comment = dict(ITEM, path='a.py', line=10)
+        value = state()
+        event = hybrid.evaluate(value, PR, [comment], [], 0, 600, 0)
+        hybrid.acknowledge(value, event['batch_id'], 1)
+        pushed = dict(PR, headRefOid='def')
+        for line in (14, None):
+            self.assertIsNone(hybrid.evaluate(value, pushed, [dict(comment, line=line)], [], 2, 600, 0))
+        review = {'key': 'review:1', 'body': '', 'state': 'COMMENTED'}
+        event = hybrid.evaluate(value, pushed, [comment, review], [], 3, 600, 0)
+        hybrid.acknowledge(value, event['batch_id'], 4)
+        verdict = hybrid.evaluate(value, pushed, [comment, dict(review, state='CHANGES_REQUESTED')], [], 5, 600, 0)
+        self.assertEqual([item['key'] for item in verdict['items']], ['review:1'])
 
     def test_equal_count_changed_batch_restarts_settle(self):
         value = state()
@@ -84,12 +101,61 @@ class HybridTests(unittest.TestCase):
     def test_snapshot_retries_head_race(self):
         newer = dict(PR, headRefOid='def')
         with patch.object(api, 'fetch_pr', side_effect=[PR, newer, newer, newer]), \
-                patch.object(api, 'fetch_feedback', return_value=[]), \
+                patch.object(api, 'fetch_feedback', return_value=[]) as fetch, \
                 patch.object(api, 'fetch_checks', side_effect=[FAIL, []]):
             pr, _, checks = hybrid.snapshot('github.com', 'o/r', 1, set())
         self.assertEqual(pr['headRefOid'], 'def')
         self.assertEqual(checks, [])
-        self.assertEqual(api.EXCERPT, 300)
+        # Edit detection depends on unexcerpted bodies.
+        self.assertTrue(all(call.kwargs.get('full') for call in fetch.call_args_list))
+
+    def test_fetch_feedback_truncates_unless_full(self):
+        long = [{'id': 1, 'user': 'reviewer', 'body': 'x' * 400}]
+        for full, length in ((True, 400), (False, api.EXCERPT + 1)):
+            with patch.object(api, 'gh_lines', side_effect=[long, [], []]):
+                items = api.fetch_feedback('github.com', 'o/r', 1, set(), full=full)
+            self.assertEqual(len(items[0]['body']), length)
+
+    def test_failed_checks_query_is_not_reported_as_no_ci(self):
+        def result(code, out='', err=''):
+            return subprocess.CompletedProcess([], code, out, err)
+        cases = [
+            (result(1, json.dumps(FAIL)), FAIL),
+            (result(8, '[{"bucket": "pending"}]'), [{'bucket': 'pending'}]),
+            (result(1, err="no checks reported on the 'x' branch"), []),
+        ]
+        for completed, expected in cases:
+            with patch.object(api.subprocess, 'run', return_value=completed):
+                self.assertEqual(api.fetch_checks('github.com', 'o/r', 1), expected)
+        for completed in (result(1, err='HTTP 502: Bad Gateway'), result(1), result(4, err='auth required')):
+            with patch.object(api.subprocess, 'run', return_value=completed), self.assertRaises(api.GhError):
+                api.fetch_checks('github.com', 'o/r', 1)
+
+    def test_save_state_retries_a_locked_target_and_leaves_no_temp_file(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / 'signal.json'
+            replace, attempts = api.os.replace, []
+            def busy_twice(source, target):
+                attempts.append(1)
+                if len(attempts) < 3:
+                    raise PermissionError(13, 'Access is denied')
+                replace(source, target)
+            with patch.object(api.os, 'replace', side_effect=busy_twice), patch.object(api.time, 'sleep'):
+                api.save_state(path, {'value': 1})
+            self.assertEqual(api.load_state(path), {'value': 1})
+            with patch.object(api.os, 'replace', side_effect=PermissionError(13, 'Access is denied')), \
+                    patch.object(api.time, 'sleep'), self.assertRaises(PermissionError):
+                api.save_state(path, {'value': 2})
+            self.assertEqual(api.load_state(path), {'value': 1})
+            self.assertEqual([entry.name for entry in Path(folder).iterdir()], ['signal.json'])
+
+    def test_events_with_emoji_survive_a_legacy_console_encoding(self):
+        code = ('import sys; sys.path.insert(0, sys.argv[1]); import watch_pr as api\n'
+                'api.configure_output(); api.emit("feedback", body="\\u2705 \\u4fee\\u6b63")')
+        env = dict(api.os.environ, PYTHONIOENCODING='ascii')
+        result = subprocess.run([sys.executable, '-c', code, str(SCRIPTS)], capture_output=True, env=env)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout.decode('utf-8'))['body'], '✅ 修正')
 
     def test_signal_health_and_target(self):
         with tempfile.TemporaryDirectory() as folder:
@@ -99,6 +165,40 @@ class HybridTests(unittest.TestCase):
             self.assertEqual(hybrid.signal_status(path, TARGET, 11), ('a', True))
             self.assertEqual(hybrid.signal_status(path, TARGET, 26), (None, False))
             self.assertEqual(hybrid.signal_status(path, dict(TARGET, pr=2), 11), (None, False))
+            self.assertEqual(hybrid.signal_status(path, TARGET, 9), (None, False))
+            self.assertIn('stale', hybrid.signal_problem(path, TARGET, 26)[1])
+            api.save_state(path, dict(target=TARGET, active=False, heartbeat=10, generation='a', reason='gh exited (1)'))
+            self.assertEqual(hybrid.signal_status(path, TARGET, 11), (None, False))
+            self.assertEqual(hybrid.signal_problem(path, TARGET, 11)[1], 'gh exited (1)')
+            path.write_text('{"target"', encoding='utf-8')
+            self.assertEqual(hybrid.signal_status(path, TARGET, 11), (None, False))
+            self.assertIn('unreadable', hybrid.signal_problem(path, TARGET, 11)[1])
+
+    def test_settle_progress_survives_a_waiting_run(self):
+        with tempfile.TemporaryDirectory() as folder:
+            args = argparse.Namespace(pr=PR['url'], repo=None, host='github.com',
+                state=str(Path(folder) / 'state'), signal=str(Path(folder) / 'signal'),
+                ack=None, include_self=True, ignore_author=[], interval=60, quiet=600,
+                settle=60, max_wait=30, reconcile=300)
+            api.save_state(Path(args.state), state())
+            clock = [0]
+            def sleep(seconds):
+                clock[0] += seconds
+            def invoke():
+                with patch.object(hybrid.time, 'time', side_effect=lambda: clock[0]), \
+                        patch.object(hybrid.time, 'monotonic', side_effect=lambda: clock[0]), \
+                        patch.object(hybrid.time, 'sleep', side_effect=sleep), \
+                        patch.object(hybrid, 'snapshot', return_value=(PR, [ITEM], [])), \
+                        redirect_stdout(io.StringIO()) as output:
+                    hybrid.run(args)
+                return json.loads(output.getvalue())
+            waiting = invoke()
+            self.assertEqual((waiting['event'], waiting['unsettled_feedback']), ('waiting', 1))
+            self.assertFalse(waiting['receiver_active'])
+            self.assertIn('not started', waiting['receiver_reason'])
+            # The settle window started in the first run; a restart must not begin it again.
+            self.assertEqual(invoke()['event'], 'feedback')
+            self.assertEqual(clock[0], 60)
 
     def test_os_lock_releases_and_excludes_second_process(self):
         with tempfile.TemporaryDirectory() as folder:
@@ -239,6 +339,88 @@ class HybridTests(unittest.TestCase):
                 process.wait.assert_called_once()
                 server.server_close.assert_called_once()
             self.assertFalse(api.load_state(signal)['active'])
+
+    def run_receiver(self, folder, popen_setup, save=None):
+        signal = Path(folder) / 'signal.json'
+        argv = ['webhook_receiver.py', PR['url'], '--signal', str(signal)]
+        with patch.object(sys, 'argv', argv), patch.object(receiver, 'HTTPServer') as server_class, \
+                patch.object(receiver.subprocess, 'Popen') as popen, \
+                patch.object(receiver, 'save_state', side_effect=save or api.save_state), \
+                redirect_stderr(io.StringIO()) as errors:
+            server_class.return_value.server_port = 12345
+            popen_setup(popen, signal, server_class.return_value)
+            try:
+                receiver.main()
+                code = 0
+            except SystemExit as stop:
+                code = stop.code
+        return code, signal, popen.return_value, errors.getvalue()
+
+    def test_forwarder_failure_is_reported_not_exit_zero(self):
+        def dies(popen, signal, server):
+            def launch(command, **kwargs):
+                kwargs['stderr'].write(b'another forwarding session is active')
+                return popen.return_value
+            popen.side_effect = launch
+            popen.return_value.poll.side_effect = [None, 1, 1]
+        def missing(popen, signal, server):
+            popen.side_effect = FileNotFoundError('gh')
+        with tempfile.TemporaryDirectory() as folder:
+            code, signal, process, errors = self.run_receiver(folder, dies)
+            saved = api.load_state(signal)
+            self.assertEqual(code, 1)
+            self.assertFalse(saved['active'])
+            self.assertIn('exited (1): another forwarding session is active', saved['reason'])
+            self.assertIn(saved['reason'], errors)
+            process.terminate.assert_not_called()
+        with tempfile.TemporaryDirectory() as folder:
+            code, signal, _, errors = self.run_receiver(folder, missing)
+            self.assertEqual(code, 1)
+            self.assertIn('could not start', api.load_state(signal)['reason'])
+
+    def test_forwarder_is_stopped_even_when_signal_writes_fail(self):
+        def stops(popen, signal, server):
+            server.handle_request.side_effect = lambda: signal.with_suffix('.json.stop').touch()
+            popen.return_value.poll.return_value = None
+        with tempfile.TemporaryDirectory() as folder:
+            code, _, process, errors = self.run_receiver(
+                folder, stops, save=PermissionError(13, 'Access is denied'))
+            self.assertEqual(code, 0)
+            process.terminate.assert_called_once()
+            self.assertIn('signal write failed', errors)
+
+    def test_delivery_reaches_the_watcher_through_the_signal_file(self):
+        with tempfile.TemporaryDirectory() as folder:
+            signal = Path(folder) / 'signal.json'
+            argv = ['webhook_receiver.py', PR['url'], '--signal', str(signal)]
+            started = threading.Event()
+            with patch.object(sys, 'argv', argv), patch.object(receiver.subprocess, 'Popen') as popen:
+                popen.side_effect = lambda *a, **k: (started.set(), popen.return_value)[1]
+                popen.return_value.poll.return_value = None
+                worker = threading.Thread(target=receiver.main, daemon=True)
+                worker.start()
+                try:
+                    self.assertTrue(started.wait(5))
+                    url = next(part for part in popen.call_args.args[0] if part.startswith('--url=')).split('=', 1)[1]
+                    self.assertIn('check_run', next(part for part in popen.call_args.args[0] if part.startswith('--events=')))
+                    deadline = time.time() + 5
+                    while hybrid.signal_status(signal, TARGET, time.time())[1] is False and time.time() < deadline:
+                        time.sleep(0.05)
+                    before, active = hybrid.signal_status(signal, TARGET, time.time())
+                    self.assertTrue(active)
+                    payload = {'repository': {'full_name': 'o/r'}, 'pull_request': {'number': 1}}
+                    request = Request(url, data=json.dumps(payload).encode(),
+                        headers={'X-GitHub-Event': 'pull_request_review', 'X-GitHub-Delivery': 'one'})
+                    with urlopen(request, timeout=5) as response:
+                        self.assertEqual(response.status, 202)
+                    after, active = hybrid.signal_status(signal, TARGET, time.time())
+                    self.assertTrue(active)
+                    self.assertNotEqual(before, after)
+                finally:
+                    signal.with_suffix('.json.stop').touch()
+                    worker.join(10)
+            self.assertFalse(worker.is_alive())
+            self.assertEqual(api.load_state(signal)['reason'], 'receiver stopped on request')
 
 
 if __name__ == '__main__':

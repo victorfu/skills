@@ -9,7 +9,10 @@ import watch_pr as api
 
 
 def versions(items):
-    return {item['key']: hashlib.sha256(json.dumps(item, sort_keys=True).encode()).hexdigest()
+    # Hash only what a reviewer can change: the text and, for reviews, the verdict.
+    # Diff coordinates such as `line` move or become null when the PR is pushed to.
+    return {item['key']: hashlib.sha256(
+                json.dumps([item.get('body'), item.get('state')]).encode()).hexdigest()
             for item in items}
 
 
@@ -25,15 +28,40 @@ def snapshot(host, repo, number, ignored):
     raise api.GhError('PR head changed repeatedly during refresh; retry')
 
 
-def signal_status(path, target, now):
+def read_signal(path):
+    # Windows can refuse a read while the receiver is replacing the file.
+    for attempt in range(3):
+        try:
+            return api.load_state(path)
+        except OSError:
+            if attempt == 2:
+                raise
+            time.sleep(0.05)
+
+
+def signal_problem(path, target, now):
+    """Return (signal, problem); problem is None only for a healthy receiver."""
     try:
-        signal = api.load_state(path)
-        if (signal and signal.get('target') == target and signal.get('active')
-                and 0 <= now - signal['heartbeat'] <= 15):
-            return signal.get('generation'), True
-    except (OSError, ValueError, KeyError, TypeError):
-        pass
-    return None, False
+        signal = read_signal(path)
+    except (OSError, ValueError) as error:
+        return None, f'signal file unreadable: {error}'
+    if signal is None:
+        return None, 'no signal file; receiver not started'
+    if not isinstance(signal, dict):
+        return None, 'signal file is not a receiver signal'
+    if signal.get('target') != target:
+        return signal, 'receiver is watching a different PR'
+    if not signal.get('active'):
+        return signal, signal.get('reason') or 'receiver is not active'
+    heartbeat = signal.get('heartbeat')
+    if not isinstance(heartbeat, (int, float)) or not 0 <= now - heartbeat <= 15:
+        return signal, 'receiver heartbeat is stale'
+    return signal, None
+
+
+def signal_status(path, target, now):
+    signal, problem = signal_problem(path, target, now)
+    return (None, False) if problem else (signal.get('generation'), True)
 
 
 def acknowledge(state, batch_id, now):
@@ -139,9 +167,13 @@ def run(args):
             return
         elapsed = time.monotonic() - started
         if elapsed >= args.max_wait:
+            fields = {'receiver_active': active}
+            if not active:
+                # Say why the watch is polling, so the fallback is never silent.
+                fields['receiver_reason'] = signal_problem(signal, target, time.time())[1] or 'receiver recovered'
             api.emit('waiting', url=pr['url'], head=pr['headRefOid'], ci=status,
                      pending_checks=[c['name'] for c in buckets.get('pending', [])],
-                     unsettled_feedback=len(state.get('settling', {})), receiver_active=active)
+                     unsettled_feedback=len(state.get('settling', {})), **fields)
             return
         delay = args.reconcile if active else args.interval
         deadlines = [delay, args.max_wait - elapsed]

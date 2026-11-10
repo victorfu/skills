@@ -29,6 +29,7 @@ import time
 
 PR_URL = re.compile(r'https://([^/\s]+)/([^/\s]+)/([^/\s]+)/pull/(\d+)/?(?:[?#].*)?$')
 EXCERPT = 300
+REPLACE_ATTEMPTS = 20
 
 
 @contextmanager
@@ -65,8 +66,12 @@ class GhError(Exception):
     pass
 
 
+def run_gh(*args):
+    return subprocess.run(['gh', *args], capture_output=True, text=True, encoding='utf-8', errors='replace')
+
+
 def gh(*args, ok_codes=(0,)):
-    result = subprocess.run(['gh', *args], capture_output=True, text=True, encoding='utf-8', errors='replace')
+    result = run_gh(*args)
     if result.returncode not in ok_codes:
         raise GhError(f"gh {' '.join(args[:3])} failed ({result.returncode}): {result.stderr.strip()[:500]}")
     return result.stdout
@@ -123,19 +128,22 @@ def fetch_pr(host, repo, number):
 
 def fetch_checks(host, repo, number):
     # gh exits 8 while checks are pending and 1 when some fail; both still print JSON.
-    try:
-        out = gh('pr', 'checks', str(number), '--repo', f'{host}/{repo}',
-                 '--json', 'name,state,bucket,link,workflow', ok_codes=(0, 1, 8))
-    except GhError as error:
-        if 'no checks reported' in str(error).lower():
-            return []
-        raise
-    try:
-        return json.loads(out) if out.strip() else []
-    except json.JSONDecodeError:
-        if 'no checks reported' in out.lower():
-            return []
-        raise GhError(f'Unexpected gh pr checks output: {out[:300]}')
+    # Exit 1 is also gh's generic failure (network, auth, rate limit), so an exit
+    # code alone never means "no CI": only JSON or gh's explicit message does.
+    result = run_gh('pr', 'checks', str(number), '--repo', f'{host}/{repo}',
+                    '--json', 'name,state,bucket,link,workflow')
+    out = result.stdout
+    if result.returncode in (0, 1, 8) and out.strip():
+        try:
+            return json.loads(out)
+        except json.JSONDecodeError:
+            pass
+    if 'no checks reported' in (out + result.stderr).lower():
+        return []
+    if result.returncode == 0 and not out.strip():
+        return []
+    detail = (result.stderr.strip() or out.strip())[:500]
+    raise GhError(f'gh pr checks failed ({result.returncode}): {detail}')
 
 
 def summarize_checks(checks):
@@ -156,9 +164,32 @@ def load_state(path):
 def save_state(path, state):
     path.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp = tempfile.mkstemp(dir=path.parent, prefix='.watch-pr-', suffix='.json')
-    with os.fdopen(fd, 'w', encoding='utf-8') as handle:
-        json.dump(state, handle, indent=2)
-    os.replace(tmp, path)
+    try:
+        with os.fdopen(fd, 'w', encoding='utf-8') as handle:
+            json.dump(state, handle, indent=2)
+        for attempt in range(REPLACE_ATTEMPTS):
+            try:
+                os.replace(tmp, path)
+                return
+            except PermissionError:
+                # Windows refuses to replace a file while another process has it open to read.
+                if attempt == REPLACE_ATTEMPTS - 1:
+                    raise
+                time.sleep(0.05)
+    except BaseException:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
+
+
+def configure_output():
+    # Feedback routinely contains emoji and non-Latin text that a legacy console
+    # code page cannot encode; events are always written as UTF-8.
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, 'reconfigure'):
+            stream.reconfigure(encoding='utf-8', errors='backslashreplace')
 
 
 def emit(event, **fields):
@@ -269,6 +300,7 @@ def main():
 if __name__ == '__main__':
     # Companion modules must share this module's exception class and configuration.
     sys.modules['watch_pr'] = sys.modules[__name__]
+    configure_output()
     try:
         main()
     except (GhError, ValueError, OSError, KeyError, json.JSONDecodeError) as error:

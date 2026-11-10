@@ -7,11 +7,20 @@ import os
 from pathlib import Path
 import secrets
 import subprocess
+import sys
 import time
 
 from watch_pr import save_state, parse_target
 
 EVENTS = 'pull_request,pull_request_review,pull_request_review_comment,issue_comment,check_run,check_suite,status,workflow_run'
+
+
+def log_tail(path):
+    try:
+        text = path.read_text(encoding='utf-8', errors='replace').strip()
+    except OSError:
+        text = ''
+    return text[-500:] or 'no error output'
 
 
 def relevant(event, payload, repo, number):
@@ -84,10 +93,16 @@ def main():
     from watch_pr import state_lock
     with state_lock(path):
         path.with_suffix(path.suffix + '.stop').unlink(missing_ok=True)
-        data = {'target': target, 'generation': secrets.token_hex(16), 'active': False}
+        data = {'target': target, 'generation': secrets.token_hex(16), 'active': False, 'heartbeat': 0}
         def write():
-            data['heartbeat'] = time.time()
-            save_state(path, data)
+            # A failed write must not end the receiver; the next tick retries it.
+            stamp = time.time()
+            try:
+                save_state(path, dict(data, heartbeat=stamp))
+            except OSError as error:
+                print(f'webhook_receiver: signal write failed: {error}', file=sys.stderr)
+                return
+            data['heartbeat'] = stamp
         def wake():
             data['generation'] = secrets.token_hex(16)
             write()
@@ -95,27 +110,42 @@ def main():
         server = HTTPServer(('127.0.0.1', 0), make_handler(target, route, wake))
         server.timeout = 1
         process = None
+        failure = None
+        log_path = path.with_suffix(path.suffix + '.log')
         write()
         try:
             env = dict(os.environ, GH_HOST=host)
-            process = subprocess.Popen([
-                'gh', 'webhook', 'forward', '--repo=' + repo, '--events=' + EVENTS,
-                '--url=http://127.0.0.1:' + str(server.server_port) + route],
-                env=env, stdout=subprocess.DEVNULL)
-            data['active'] = True
-            write()
-            deadline = time.monotonic() + args.lifetime
-            while process.poll() is None and time.monotonic() < deadline:
-                server.handle_request()
-                if time.time() - data['heartbeat'] >= 5:
-                    write()
-                # Consumer requests shutdown when the watch ends.
-                if path.with_suffix(path.suffix + '.stop').exists():
-                    break
+            try:
+                # The forwarder's stderr is the only place gh explains a refusal; keep it.
+                with log_path.open('wb') as log:
+                    process = subprocess.Popen([
+                        'gh', 'webhook', 'forward', '--repo=' + repo, '--events=' + EVENTS,
+                        '--url=http://127.0.0.1:' + str(server.server_port) + route],
+                        env=env, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=log)
+            except OSError as error:
+                failure = f'could not start gh webhook forward: {error}'
+            else:
+                data['active'] = True
+                write()
+                deadline = time.monotonic() + args.lifetime
+                while True:
+                    code = process.poll()
+                    if code is not None:
+                        failure = f'gh webhook forward exited ({code}): {log_tail(log_path)}'
+                        break
+                    if time.monotonic() >= deadline:
+                        data['reason'] = 'receiver lifetime limit reached'
+                        break
+                    server.handle_request()
+                    if time.time() - data['heartbeat'] >= 5:
+                        write()
+                    # Consumer requests shutdown when the watch ends.
+                    if path.with_suffix(path.suffix + '.stop').exists():
+                        data['reason'] = 'receiver stopped on request'
+                        break
         finally:
-            data['active'] = False
-            write()
-            server.server_close()
+            # Stop the forwarder first: it holds the repository's only forwarding
+            # slot, so no later cleanup step may be able to skip this one.
             if process is not None and process.poll() is None:
                 process.terminate()
                 try:
@@ -123,7 +153,20 @@ def main():
                 except subprocess.TimeoutExpired:
                     process.kill()
                     process.wait()
+            server.server_close()
+            data['active'] = False
+            if failure:
+                data['reason'] = failure
+            write()
+    if failure:
+        # A dead forwarder must not look like a requested stop to the caller.
+        print(f'webhook_receiver: {failure}', file=sys.stderr)
+        sys.exit(1)
 
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except (ValueError, OSError) as error:
+        print(f'webhook_receiver: {type(error).__name__}: {error}', file=sys.stderr)
+        sys.exit(1)
