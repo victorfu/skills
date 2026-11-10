@@ -83,7 +83,7 @@ Before testing against real issues, use read-only mode ("assess only, don't chan
 
 ## Adding a skill
 
-1. Create `skills/<name>/SKILL.md`. Its frontmatter may contain only `name` (must equal the directory name, lowercase with hyphens) and `description`.
+1. Create `skills/<name>/SKILL.md`. Its frontmatter may contain only `name` (must equal the directory name, lowercase with hyphens) and `description`. Every skill here is user-invoked, so write the description for a person browsing the skill list: a one- or two-sentence summary of what it does. Keep invocation rules and scope limits in the body.
 2. Create `skills/<name>/agents/openai.yaml` with `interface.display_name`, `short_description` (25 to 64 characters), a `default_prompt` containing `$<plugin-name>:<name>`, and `policy.allow_implicit_invocation: false`. `<plugin-name>` must match `name` in `release.json`; this repo uses `$devflow:<name>`, and the build checks the full invocation name.
 3. Relative links in the `SKILL.md` body must point to files that actually exist inside the skill directory.
 4. Run the build and tests; `build.py` picks up every skill under `skills/` automatically.
