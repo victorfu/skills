@@ -248,8 +248,6 @@ def main():
         return
 
     started = now
-    pending_new = None
-    last_new_at = None
     while True:
         if pr['state'] != 'OPEN':
             emit('closed', url=pr['url'], pr_state=pr['state'], head=pr['headRefOid'])
@@ -263,15 +261,26 @@ def main():
         seen = set(state['seen'])
         fresh = [i for i in feedback if i['key'] not in seen]
         if fresh:
-            if pending_new is None or len(fresh) > len(pending_new):
-                last_new_at = now
-            pending_new = fresh
-            if now - last_new_at >= args.settle:
+            keys = sorted(i['key'] for i in fresh)
+            settling = state.get('poll_settling')
+            # A waiting event ends this process, not the batch's settle window.
+            # Old state files have no timer; start one on the first observation.
+            if settling is None or set(keys) - set(settling['keys']):
+                settling = {'keys': keys, 'since': now}
+            else:
+                settling = {**settling, 'keys': keys}
+            if state.get('poll_settling') != settling:
+                state['poll_settling'] = settling
+                save_state(state_path, state)
+            if now - settling['since'] >= args.settle:
                 state['seen'] = sorted(seen | {i['key'] for i in fresh})
                 state['quiet_since'] = now
+                state.pop('poll_settling', None)
                 save_state(state_path, state)
                 emit('feedback', url=pr['url'], head=pr['headRefOid'], items=fresh)
                 return
+        elif state.pop('poll_settling', None) is not None:
+            save_state(state_path, state)
 
         checks = fetch_checks(host, repo, number)
         status, failing, buckets = summarize_checks(checks)
