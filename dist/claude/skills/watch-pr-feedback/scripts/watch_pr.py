@@ -19,6 +19,7 @@ Uses only the Python standard library; runs on Windows, macOS and Linux.
 import argparse
 from contextlib import contextmanager
 import json
+import math
 import os
 from pathlib import Path
 import re
@@ -192,6 +193,19 @@ def configure_output():
             stream.reconfigure(encoding='utf-8', errors='backslashreplace')
 
 
+def poll_settling(state):
+    """Return the saved settle timer, or None when it is absent or cannot be trusted."""
+    value = state.get('poll_settling')
+    if not isinstance(value, dict):
+        return None
+    keys, since = value.get('keys'), value.get('since')
+    if not isinstance(keys, list) or not all(isinstance(key, str) for key in keys):
+        return None
+    if isinstance(since, bool) or not isinstance(since, (int, float)) or not math.isfinite(since):
+        return None
+    return value
+
+
 def emit(event, **fields):
     print(json.dumps({'event': event, **fields}, ensure_ascii=False, indent=2))
 
@@ -262,13 +276,14 @@ def main():
         fresh = [i for i in feedback if i['key'] not in seen]
         if fresh:
             keys = sorted(i['key'] for i in fresh)
-            settling = state.get('poll_settling')
+            settling = poll_settling(state)
             # A waiting event ends this process, not the batch's settle window.
             # Old state files have no timer; start one on the first observation.
             if settling is None or set(keys) - set(settling['keys']):
                 settling = {'keys': keys, 'since': now}
             else:
-                settling = {**settling, 'keys': keys}
+                # A clock that stepped backwards must not hold the batch longer than one window.
+                settling = {'keys': keys, 'since': min(settling['since'], now)}
             if state.get('poll_settling') != settling:
                 state['poll_settling'] = settling
                 save_state(state_path, state)
