@@ -146,7 +146,7 @@ claude plugin update devflow@victorfu-skills
 codex plugin marketplace upgrade victorfu-skills
 ```
 
-Restart the client after updating. Claude Code only switches to new content when the plugin version number changes.
+Restart the client after updating. Claude Code only switches to new content when the plugin version number changes. [CHANGELOG.md](CHANGELOG.md) lists what each version changed, including changed defaults.
 
 ## Migrating from `dev-workflow-kit`
 

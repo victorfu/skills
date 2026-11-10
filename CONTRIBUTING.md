@@ -56,7 +56,7 @@ claude plugin validate dist/claude --strict
 claude plugin validate .claude-plugin/marketplace.json --strict
 ```
 
-`build.py` removes files from `dist/` that are no longer needed, so do not put other files in `dist/`. CI runs `--check` and the unit tests on Ubuntu, macOS and Windows with Python 3.10 and 3.12, and fails if the outputs were not rebuilt.
+`build.py` removes files from `dist/` that are no longer needed, so do not put other files in `dist/`. CI runs `--check` and the unit tests on Ubuntu, macOS and Windows with Python 3.10 and 3.12, and fails if the outputs were not rebuilt. A second job installs Claude Code on Ubuntu, runs both `validate --strict` commands, and installs the plugin from the local marketplace into a temporary config directory.
 
 ## Trying it locally
 
@@ -85,15 +85,16 @@ Before testing against real issues, use read-only mode ("assess only, don't chan
 
 1. Create `skills/<name>/SKILL.md`. Its frontmatter may contain only `name` (must equal the directory name, lowercase with hyphens) and `description`. Every skill here is user-invoked, so write the description for a person browsing the skill list: a one- or two-sentence summary of what it does. Keep invocation rules and scope limits in the body.
 2. Create `skills/<name>/agents/openai.yaml` with `interface.display_name`, `short_description` (25 to 64 characters), a `default_prompt` containing `$<plugin-name>:<name>`, and `policy.allow_implicit_invocation: false`. `<plugin-name>` must match `name` in `release.json`; this repo uses `$devflow:<name>`, and the build checks the full invocation name.
-3. Relative links in the `SKILL.md` body must point to files that actually exist inside the skill directory.
+3. Relative links in the `SKILL.md` body must point to files that actually exist inside the skill directory. A path to a sibling skill (`../<other-skill>/SKILL.md`) must name an existing source skill and file, and every "section N" mention must match a `## N.` heading in the same file. Text inside fenced code blocks is not checked.
 4. Run the build and tests; `build.py` picks up every skill under `skills/` automatically.
 
 ## Releasing a new version
 
 1. Update `version` in `release.json` (SemVer, for example `0.1.1`). Claude Code only updates an installed plugin when the version number changes, so bump it on every release.
-2. Run the build and tests, and confirm `--check` passes.
-3. Commit all changes (including `dist/` and both marketplaces), push, and wait for CI to pass.
-4. Create an annotated tag on that commit (if the release went through a PR, the merge commit on `master`) and push it. The tag message is `displayName` from `release.json` followed by the version:
+2. In `CHANGELOG.md`, rename "Unreleased" to the new version and date. Every change to what a skill does needs a line there, written for someone deciding whether to update; mark changed defaults in bold.
+3. Run the build and tests, and confirm `--check` passes.
+4. Commit all changes (including `dist/` and both marketplaces), push, and wait for CI to pass.
+5. Create an annotated tag on that commit (if the release went through a PR, the merge commit on `master`) and push it. The tag message is `displayName` from `release.json` followed by the version:
 
    ```sh
    git tag -a v0.1.1 -m "DevFlow 0.1.1"

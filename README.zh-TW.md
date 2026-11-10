@@ -146,7 +146,7 @@ claude plugin update devflow@victorfu-skills
 codex plugin marketplace upgrade victorfu-skills
 ```
 
-更新後重新啟動客戶端。Claude Code 只有在 plugin 版本號改變時才會換成新內容。
+更新後重新啟動客戶端。Claude Code 只有在 plugin 版本號改變時才會換成新內容。各版本的變更（包含預設行為的改變）列在 [CHANGELOG.md](CHANGELOG.md)（英文）。
 
 ## 從 `dev-workflow-kit` 遷移
 
