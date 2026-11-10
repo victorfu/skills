@@ -11,6 +11,8 @@ release.json                       Version and plugin metadata (name is the plug
 assets/icon.svg                    Source for the Codex plugin icon; icon.png (512) and logo.png (1024) are exported from it
 tools/build.py                     Generates dist/ and both marketplaces; --check compares without writing
 tools/test_build.py                Packaging regression tests (run in a temporary directory)
+tools/run_evals.py                 Runs evals/ against dist/claude with `claude plugin eval` (costs tokens)
+evals/<case>/                      Behavior eval cases: prompt.md and graders/
 dist/claude/, dist/codex/          Generated plugins (commit them; do not edit by hand)
 .claude-plugin/marketplace.json    Generated Claude Code marketplace
 .agents/plugins/marketplace.json   Generated Codex marketplace
@@ -57,6 +59,17 @@ claude plugin validate .claude-plugin/marketplace.json --strict
 ```
 
 `build.py` removes files from `dist/` that are no longer needed, so do not put other files in `dist/`. CI runs `--check` and the unit tests on Ubuntu, macOS and Windows with Python 3.10 and 3.12, and fails if the outputs were not rebuilt. A second job installs Claude Code on Ubuntu, runs both `validate --strict` commands, and installs the plugin from the local marketplace into a temporary config directory.
+
+## Behavior evals
+
+`evals/<case>/` holds cases for `claude plugin eval`: `prompt.md` (frontmatter with turn and tool limits; the body is sent verbatim and starts with the explicit `/devflow:<skill>` invocation) and one grader per file under `graders/`. Run them against the generated Claude package:
+
+```sh
+.venv/bin/python tools/run_evals.py --runs 3
+.venv/bin/python tools/run_evals.py --case 'bare-*' --runs 1 --max-cost-usd 1
+```
+
+Each run is a real model call on your account (about $0.10 per run in the first trial), so evals run by hand and not in CI. Reports land in `evals/results/` (gitignored). Results vary between runs: report them as passes out of runs, with the model and Claude Code version. Read the "with" column; these skills only run on explicit invocation, so the no-plugin baseline and Δ say little. Current cases allow read-only tools only and touch neither GitHub nor the working tree.
 
 ## Trying it locally
 

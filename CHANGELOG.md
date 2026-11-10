@@ -4,6 +4,9 @@ Behavior changes to the skills and the plugin package, newest first. These skill
 
 ## Unreleased
 
+- `resolve-github-issue` has a subagent review the fix in a fresh context when the client supports one, given only the diff, the issue and the repo guidelines; its findings are verified before being acted on, for at most three rounds. Without a subagent it reviews in the same context as before, and the PR body says which kind of review was done.
+- `resolve-github-issue` tries a list of reproduction strategies before falling back to code inspection when the issue's steps do not reproduce directly.
+- `resolve-github-issue` PR bodies show the regression check failing before and passing after the fix, and state whether a revert fully undoes the change.
 - `resolve-github-issue` uses a repo's existing work-in-progress label (such as `wip` or `status: in progress`) as the progress label instead of creating a new `in progress` label.
 - `resolve-github-issue` and `address-review-feedback` redact secrets, tokens and credentials from command output and CI logs quoted in PR bodies and review replies.
 - The build now rejects a skill that points to a missing sibling skill file or to a numbered section that does not exist, and no longer lints text inside fenced code blocks.
