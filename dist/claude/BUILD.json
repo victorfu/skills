@@ -6,8 +6,10 @@
   "sha256": {
     "skills/address-review-feedback/LICENSE": "a37e0e9697144819e1d965176ac4ae5bc3fa02d11e7812036bbcadf6dafe2400",
     "skills/address-review-feedback/SKILL.md": "8e17c3586c99fa6aed011b243df6ce576a535c116f510e7f12f5b088055360ec",
-    "skills/resolve-github-issue/SKILL.md": "a77929f170afad1cda85d198336a9d5bf4501a841919cc65b376ba4342b54cdf",
+    "skills/resolve-github-issue/SKILL.md": "0320f947fc3ca07ceaca59b17d9deaf450fff339aaf7ac571ee934566a0a0b69",
     "skills/resolve-github-issue/references/github-workflow.md": "fcb09bbf6364b28f541bfedf8bba1d68c58ef5c46118775808f742fd32b8febe",
+    "skills/resolve-github-issue/references/pr-auto-fix.md": "9cb980add9f2d5cd41f22631bc2b274ce8879888b23686d6539edec1ae435b8f",
+    "skills/resolve-github-issue/references/stopping-and-resuming.md": "c5fb7fdda6f09ca839b3d9748cf1c669ee27bbdcd4fbce29fc5b39c3da083ce4",
     "skills/watch-pr-feedback/SKILL.md": "e568d19f3f5dfe12e4ba6a96058029f5587a53839bdc98e651ac681866029f9e",
     "skills/watch-pr-feedback/scripts/watch_pr.py": "4090ad23d4d814dc937a01c68aa463064daad7ea501e7b4eb278deca085e28e6"
   }
