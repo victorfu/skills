@@ -1,15 +1,17 @@
 {
   "generated": true,
   "source": "skills/",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "platform": "codex",
   "sha256": {
     "skills/address-review-feedback/LICENSE": "a37e0e9697144819e1d965176ac4ae5bc3fa02d11e7812036bbcadf6dafe2400",
-    "skills/address-review-feedback/SKILL.md": "3979d500bddbde7020a08d728b9ac9739a5cce64564889aa425f525dd2313452",
+    "skills/address-review-feedback/SKILL.md": "d157b9517f4e77be8f0290eda13056b4ba5731af9bfbaef825f39e79f44e88f2",
     "skills/address-review-feedback/agents/openai.yaml": "f2a9709b8f2b1d8fc9c011c8b8218f415fc5c69a593ace8e46ec90dd427e81d6",
-    "skills/address-review-feedback/references/upstream.md": "7844ca7c847da310e610bab86ead39102da3298ad0ef052e6f39336723e3fc39",
     "skills/resolve-github-issue/SKILL.md": "888350d65c32b3c1d9cefb186056db3f6af915ba6a4be3f8967bde680dcba760",
     "skills/resolve-github-issue/agents/openai.yaml": "8cf2450cde5dd9b9696b4161ae5800a13ad962baa01c0cb0eb2041f95501c0a1",
-    "skills/resolve-github-issue/references/github-workflow.md": "fcb09bbf6364b28f541bfedf8bba1d68c58ef5c46118775808f742fd32b8febe"
+    "skills/resolve-github-issue/references/github-workflow.md": "fcb09bbf6364b28f541bfedf8bba1d68c58ef5c46118775808f742fd32b8febe",
+    "skills/watch-pr-feedback/SKILL.md": "28ed9f8121d8241ca36b855fed51f5bc1709b6f8467940010efbcc6272e58225",
+    "skills/watch-pr-feedback/agents/openai.yaml": "49450c54ac604d6530bba9ff1374e206db2dda7c131c6e32d1879ba9b437e337",
+    "skills/watch-pr-feedback/scripts/watch_pr.py": "4090ad23d4d814dc937a01c68aa463064daad7ea501e7b4eb278deca085e28e6"
   }
 }

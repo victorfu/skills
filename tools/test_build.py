@@ -121,6 +121,16 @@ class BuildTests(unittest.TestCase):
         self.run_build(check=True)
         self.assertEqual([p for p in (self.root / 'dist').rglob('.DS_Store')], [])
 
+    def test_python_bytecode_is_not_packaged(self):
+        cache = self.root / 'skills/resolve-github-issue/__pycache__'
+        cache.mkdir()
+        (cache / 'helper.cpython-312.pyc').write_bytes(b'bytecode')
+        (self.root / 'skills/resolve-github-issue/stray.pyc').write_bytes(b'bytecode')
+        self.run_build()
+        self.run_build(check=True)
+        self.assertEqual([p for p in (self.root / 'dist').rglob('*.pyc')], [])
+        self.assertEqual([p for p in (self.root / 'dist').rglob('__pycache__')], [])
+
     def test_reject_implicit_invocation(self):
         path = self.root / 'skills/resolve-github-issue/agents/openai.yaml'
         write_lf(path, path.read_text(encoding='utf-8').replace('false', 'true'))

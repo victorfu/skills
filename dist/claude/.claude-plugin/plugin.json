@@ -1,6 +1,6 @@
 {
   "name": "devflow",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "description": "Shared development workflow skills; each skill runs only under its explicit invocation contract.",
   "author": {
     "name": "Victor"

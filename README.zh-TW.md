@@ -7,7 +7,8 @@
 | Skill | 用途 |
 | --- | --- |
 | `resolve-github-issue` | 給它一個 GitHub issue，它會先驗證問題是否成立，再修正、測試、審查，最後開 PR。 |
-| `address-review-feedback` | 先對照目前程式碼驗證 review 意見，再處理成立的修改；說明不成立、已修正及待釐清的項目。 |
+| `address-review-feedback` | 先對照目前程式碼驗證 review 意見與失敗的 CI，再處理成立的修改；說明不成立、已修正及待釐清的項目。 |
+| `watch-pr-feedback` | 用 `gh` 監看 PR，每有新的 review comments 或 CI 失敗就執行 `address-review-feedback`，直到不再有新意見。 |
 
 ## 需求
 
@@ -16,7 +17,7 @@
 - GitHub 存取：已登入的 [GitHub CLI](https://cli.github.com)（`gh auth login`），或客戶端內可用的 GitHub connector
 - 要開 PR 的 repo 需有 push 權限；沒有的話，使用你自己的 fork
 
-不需要 Python 或額外的 API key。
+不需要額外的 API key。`watch-pr-feedback` 另需 `gh` 與 Python 3（只用標準函式庫）執行輪詢腳本；其他 skill 不需要 Python。
 
 ## 安裝
 
@@ -115,11 +116,24 @@ $devflow:address-review-feedback 驗證下方 review 意見，修正成立的項
 https://github.com/OWNER/REPO/pull/123 驗證 review 意見，修正成立的項目、測試、commit 並 push 到我的既有 PR 分支。不要回覆留言或 resolve threads。
 ```
 
+PR head 上失敗的 CI checks 也會當作待處理的意見，即使沒有任何 review comment；基礎設施或不穩定（flaky）造成的失敗只回報，不繞過。
+
 它會核對最新程式碼、需求、呼叫端及支援平台，將各項意見判定為 `VALID`、`INVALID`、`ALREADY_FIXED` 或 `NEEDS_INFO`。意見成立與建議修法是否正確會分開驗證；刪除看似未使用的程式碼前，也會檢查公開 API 或動態呼叫。有一項需要釐清時，只暫停該項及其相依修改，其他已驗證且已授權的項目會繼續。
 
 明確叫用後，預設會驗證意見、修復成立的問題、檢查合併衝突與 build、commit 並 push 更新既有 PR，最後回覆 review comments。使用者明確要求只驗證、只修改本機、不 push 或不回覆時，會依限制執行；要求回覆草稿不會直接發送。Resolve threads 仍需明確要求，流程不會 merge PR 或 force push。
 
-此 skill 改寫自 [Superpowers](https://github.com/obra/superpowers)，[來源說明](skills/address-review-feedback/references/upstream.md) 記錄固定的上游 revision、整合調整及 MIT 授權。不需要安裝整套 Superpowers。新增 skill 已在本機檢查打包，完整客戶端叫用尚未驗證。
+此 skill 已在本機檢查打包，完整客戶端叫用尚未驗證。
+
+### 持續監看 PR 直到沒有新意見
+
+叫用 `watch-pr-feedback` 並提供 PR 網址。它用 `gh` 輪詢 PR（預設每 60 秒），每當 head SHA 出現新的 review comments、reviews、PR 對話留言或 CI 失敗，就執行完整的 `address-review-feedback` 流程。在 10 分鐘的安靜期內沒有新意見且沒有 CI 尚在執行、PR 關閉，或達到 10 輪／4 小時上限時停止。
+
+```text
+/devflow:watch-pr-feedback https://github.com/OWNER/REPO/pull/123
+$devflow:watch-pr-feedback https://github.com/OWNER/REPO/pull/123 每 2 分鐘檢查一次，1 小時後停止，不要回覆留言。
+```
+
+預設忽略你自己 `gh` 帳號的留言，避免它發出的回覆再觸發新一輪。你指定的限制會套用到每一輪。它不會 merge、force push 或重新執行 CI。輪詢腳本已對實際已合併的 PR 及模擬事件測試；完整的實際監看流程尚未驗證。
 
 ## 更新
 
@@ -174,3 +188,7 @@ codex plugin marketplace remove victorfu-skills
 ## 參與開發
 
 `skills/` 是唯一的手寫來源，`dist/` 與兩份 marketplace 檔案由 `tools/build.py` 產生。建置、測試、本機試用與發布流程見 [CONTRIBUTING.md](CONTRIBUTING.md)（英文）。
+
+## 授權
+
+[MIT](LICENSE)。

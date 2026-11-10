@@ -1,14 +1,12 @@
 ---
 disable-model-invocation: true
 name: address-review-feedback
-description: Only when the user explicitly invokes address-review-feedback, evaluate code review feedback against the current code, requirements and supported platforms then apply justified fixes, update the existing PR and reply to review comments by default. Handle GitHub PR threads, pasted review comments and feedback from people or agents. Honor explicit requests for verification only, reply drafts only or other limits.
+description: Only when the user explicitly invokes address-review-feedback, evaluate code review feedback against the current code, requirements and supported platforms then apply justified fixes, including failing CI checks on the PR head, update the existing PR and reply to review comments by default. Handle GitHub PR threads, pasted review comments, failing CI and feedback from people or agents. Honor explicit requests for verification only, reply drafts only or other limits.
 ---
 
 # address-review-feedback
 
 Verify feedback before implementing it. Give evidence for both fixes and technical pushback. Reply in the user's language; code and commits follow the target repo's conventions.
-
-Adapted from Superpowers; see [upstream provenance and integration notes](references/upstream.md). The upstream MIT notice is retained in [LICENSE](LICENSE).
 
 ## Scope and authorization
 
@@ -25,6 +23,7 @@ Adapted from Superpowers; see [upstream provenance and integration notes](refere
 3. For local work, inspect git status, remotes and HEAD. Preserve the user's uncommitted work; use a separate worktree or checkout when needed. Do not change an unrelated branch or recreate an existing fix.
 4. Keep a compact record per distinct concern: comment/thread ID or quoted text, current code location, claimed behavior, evidence, verdict, dependencies, action and verification. Group duplicates while retaining their thread identities. For GitHub feedback, distinguish review comments from top-level conversation comments.
 5. Check merge conflicts and build health even when no review comment mentions them. For a PR, inspect mergeability against the latest base and build/CI results for the current head SHA; record the checked base/head revisions. Inspect local unmerged paths and conflict markers when a checkout is available. If remote mergeability is unknown, use a non-mutating merge check or an isolated worktree with current refs; otherwise report it as unknown, not conflict-free. Identify the repo's documented build commands and required CI jobs, and distinguish existing failures from regressions introduced by the fixes. Assessment-only or draft-only work reports these findings without changing code or branches.
+6. Treat each failing build/CI check on the current head SHA as a concern of its own, also when there are no review comments or the invocation names only the CI failure. Read its logs and record the failing step and error as the claim, then verify and decide it like review feedback (sections 2 to 4). A failure caused by infrastructure, missing secrets or flakiness outside the repo's code is recorded and reported, not patched around; do not re-run, skip or disable checks unless the user asks. CI concerns have no review thread: report them in the final reply rather than posting a PR comment, unless a reviewer asked about them in a thread.
 
 ## 2. Verify each claim before deciding
 
