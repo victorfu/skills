@@ -188,6 +188,14 @@ class BuildTests(unittest.TestCase):
                     self.run_build()
                 (self.root / 'skills/resolve-github-issue/SKILL.md').write_bytes(original)
 
+    def test_long_skill_warns_but_builds(self):
+        self.append_to_skill('resolve-github-issue', '\nfiller\n' * build.MAX_SKILL_LINES)
+        stderr = io.StringIO()
+        with contextlib.redirect_stderr(stderr):
+            self.run_build()
+        self.assertIn('WARN: resolve-github-issue/SKILL.md', stderr.getvalue())
+        self.run_build(check=True)
+
     def test_reject_output_symlink(self):
         outside = self.root / 'outside'
         outside.mkdir()

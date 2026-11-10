@@ -45,7 +45,7 @@ Assign one verdict per concern:
 | VALID | Current supported behavior violates an established contract, or a requested change has clear acceptance criteria | Apply the smallest justified fix within authorized scope; otherwise describe it |
 | INVALID | Concrete counter-evidence disproves the concern or shows the proposed change would break required behavior | Explain the evidence and keep the correct behavior; separately assess any underlying concern |
 | ALREADY_FIXED | The current revision and a fixing diff or check demonstrate that the concern is addressed | Cite the fix; avoid duplicate changes |
-| NEEDS_INFO | A required input, environment, requirement or product decision is missing | State what was checked and the smallest missing fact; hold this item and its dependents |
+| NEEDS_INFO | A required input, environment, requirement or product decision is missing | State what was checked and the smallest missing fact, with your recommended answer when the gap is a decision; hold this item and its dependents |
 
 If a valid request exceeds scope or conflicts with an explicit user decision, record that separately and request the specific decision needed. Do not silently expand the task.
 

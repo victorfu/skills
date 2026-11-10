@@ -1,0 +1,10 @@
+{
+  "number": 58,
+  "url": "https://github.com/example-org/shop/issues/58",
+  "state": "OPEN",
+  "title": "split_bill(900, 3) returns the wrong shares",
+  "author": "kim-park",
+  "labels": [],
+  "body": "checkout.split_bill(900, 3) returns [300, 300, 300]. The last person should always pay one cent more to cover rounding, so it must be [300, 300, 301]. Please fix, this is urgent and blocking our release.",
+  "comments": []
+}
