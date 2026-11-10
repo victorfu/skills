@@ -280,6 +280,17 @@ class InventoryTests(unittest.TestCase):
         self.assertEqual(Path(ledger['repo_root']), target.resolve())
         self.assertEqual([item['path'] for item in ledger['files']], ['real.py'])
 
+    def test_target_with_leading_space_is_not_mistaken_for_an_ignored_name(self):
+        (self.repo / '.gitignore').write_bytes(b'/scratch\n')
+        target = self.repo / ' scratch'
+        target.mkdir()
+        (target / 'real.py').write_bytes(b'print(1)\n')
+        result = self.run_helper('create', '--repo', str(target), '--out', str(self.out))
+        self.assertIn('inventorying its root', result.stderr)
+        ledger = self.ledger()
+        self.assertEqual(Path(ledger['repo_root']), self.repo.resolve())
+        self.assertIn('tracked.py', {item['path'] for item in ledger['files']})
+
     @unittest.skipUnless(os.name == 'posix', 'requires a directory name ending in whitespace')
     def test_repository_root_with_trailing_space(self):
         renamed = self.repo.with_name('repo ')

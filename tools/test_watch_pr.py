@@ -37,18 +37,33 @@ class PollTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.path = Path(self.temp.name) / 'state.json'
         self.now = 0
-        api.save_state(self.path, {'target': TARGET, 'head': 'abc', 'seen': [],
-                                   'quiet_since': 0, 'ci_reported': []})
+        self.write_state()
 
-    def invoke(self, items, max_wait=0):
+    def write_state(self, **extra):
+        # No poll_settling by default: that is what a state file from before the timer looks like.
+        api.save_state(self.path, {'target': TARGET, 'head': 'abc', 'seen': [],
+                                   'quiet_since': 0, 'ci_reported': [], **extra})
+
+    def saved(self):
+        return api.load_state(self.path)
+
+    def invoke(self, items, max_wait=0, pr=PR, polls=None):
+        # polls: one feedback list per fetch, the last repeating, for changes within a single run.
+        remaining = list(polls or [])
+
+        def feedback(*_):
+            if not remaining:
+                return items
+            return remaining.pop(0) if len(remaining) > 1 else remaining[0]
+
         argv = ['watch_pr.py', PR['url'], '--state', str(self.path), '--include-self',
                 '--interval', '1', '--settle', '3', '--max-wait', str(max_wait)]
 
         def sleep(seconds):
             self.now += seconds
 
-        with patch.object(sys, 'argv', argv), patch.object(api, 'fetch_pr', return_value=PR), \
-                patch.object(api, 'fetch_feedback', return_value=items), \
+        with patch.object(sys, 'argv', argv), patch.object(api, 'fetch_pr', return_value=pr), \
+                patch.object(api, 'fetch_feedback', side_effect=feedback), \
                 patch.object(api, 'fetch_checks', return_value=[]), \
                 patch.object(api.time, 'time', side_effect=lambda: self.now), \
                 patch.object(api.time, 'sleep', side_effect=sleep), redirect_stdout(io.StringIO()) as output:
@@ -56,7 +71,9 @@ class PollTests(unittest.TestCase):
         return json.loads(output.getvalue())
 
     def test_settle_survives_waiting_and_delivers_once(self):
-        self.assertEqual(self.invoke([ITEM], max_wait=1)['event'], 'waiting')
+        event = self.invoke([ITEM], max_wait=1)
+        self.assertEqual(event['event'], 'waiting')
+        self.assertEqual(event['unsettled_feedback'], 1)
         self.assertEqual(self.invoke([ITEM], max_wait=1)['event'], 'waiting')
         event = self.invoke([ITEM], max_wait=1)
         self.assertEqual(event['event'], 'feedback')
@@ -65,19 +82,103 @@ class PollTests(unittest.TestCase):
         self.assertEqual(self.invoke([ITEM])['event'], 'waiting')
 
     def test_new_comment_restarts_persisted_settle(self):
-        self.invoke([ITEM])
+        self.assertEqual(self.invoke([ITEM])['event'], 'waiting')
         other = dict(ITEM, key='review_comment:2')
         self.now = 2
         self.assertEqual(self.invoke([ITEM, other])['event'], 'waiting')
         self.now = 3
         self.assertEqual(self.invoke([ITEM, other])['event'], 'waiting')
         self.now = 5
-        self.assertEqual(self.invoke([ITEM, other])['items'], [ITEM, other])
+        event = self.invoke([ITEM, other])
+        self.assertEqual(event['event'], 'feedback')
+        self.assertEqual(event['items'], [ITEM, other])
+
+    def test_replaced_comment_restarts_settle_at_the_same_count(self):
+        other = dict(ITEM, key='review_comment:2')
+        self.assertEqual(self.invoke([ITEM])['event'], 'waiting')
+        self.now = 2
+        self.assertEqual(self.invoke([other])['event'], 'waiting')
+        self.now = 3
+        self.assertEqual(self.invoke([other])['event'], 'waiting')
+        self.now = 5
+        event = self.invoke([other])
+        self.assertEqual(event['event'], 'feedback')
+        self.assertEqual(event['items'], [other])
+
+    def test_partly_disappeared_batch_keeps_its_timer(self):
+        other = dict(ITEM, key='review_comment:2')
+        self.assertEqual(self.invoke([ITEM, other])['event'], 'waiting')
+        self.now = 2
+        self.assertEqual(self.invoke([ITEM])['event'], 'waiting')
+        self.now = 3
+        event = self.invoke([ITEM])
+        self.assertEqual(event['event'], 'feedback')
+        self.assertEqual(event['items'], [ITEM])
+
+    def test_comment_that_returns_after_disappearing_restarts_settle(self):
+        other = dict(ITEM, key='review_comment:2')
+        self.assertEqual(self.invoke([ITEM, other])['event'], 'waiting')
+        self.now = 1
+        self.assertEqual(self.invoke([ITEM])['event'], 'waiting')
+        self.now = 2
+        self.assertEqual(self.invoke([ITEM, other])['event'], 'waiting')
+        self.now = 3
+        self.assertEqual(self.invoke([ITEM, other])['event'], 'waiting')
+        self.now = 5
+        self.assertEqual(self.invoke([ITEM, other])['event'], 'feedback')
+
+    def test_comment_arriving_within_one_run_restarts_settle(self):
+        other = dict(ITEM, key='review_comment:2')
+        event = self.invoke(None, max_wait=10, polls=[[ITEM], [ITEM], [ITEM, other]])
+        self.assertEqual(event['event'], 'feedback')
+        self.assertEqual(event['items'], [ITEM, other])
+        self.assertEqual(self.now, 5)
+
+    def test_delivery_records_the_batch_and_clears_the_timer(self):
+        self.assertEqual(self.invoke([ITEM])['event'], 'waiting')
+        self.assertEqual(self.saved()['poll_settling'], {'keys': [ITEM['key']], 'since': 0})
+        self.now = 3
+        self.assertEqual(self.invoke([ITEM])['event'], 'feedback')
+        saved = self.saved()
+        self.assertEqual(saved['seen'], [ITEM['key']])
+        self.assertEqual(saved['quiet_since'], 3)
+        self.assertNotIn('poll_settling', saved)
+
+    def test_push_during_settle_does_not_restart_it(self):
+        pushed = dict(PR, headRefOid='def')
+        self.assertEqual(self.invoke([ITEM])['event'], 'waiting')
+        self.now = 2
+        self.assertEqual(self.invoke([ITEM], pr=pushed)['event'], 'waiting')
+        self.assertEqual(self.saved()['head'], 'def')
+        self.now = 3
+        self.assertEqual(self.invoke([ITEM], pr=pushed)['event'], 'feedback')
+
+    def test_unreadable_timer_restarts_settle(self):
+        key = ITEM['key']
+        for bad in ({}, [], 'soon', {'keys': [key]}, {'since': 0}, {'keys': None, 'since': 0},
+                    {'keys': [key], 'since': None}, {'keys': [key], 'since': 'x'},
+                    {'keys': [key], 'since': True}, {'keys': [1], 'since': 0}):
+            with self.subTest(poll_settling=bad):
+                self.write_state(poll_settling=bad)
+                self.now = 10
+                self.assertEqual(self.invoke([ITEM])['event'], 'waiting')
+                self.assertEqual(self.saved()['poll_settling'], {'keys': [key], 'since': 10})
+                self.now = 13
+                self.assertEqual(self.invoke([ITEM])['event'], 'feedback')
+
+    def test_timer_from_the_future_waits_one_settle_window(self):
+        self.write_state(poll_settling={'keys': [ITEM['key']], 'since': 1000})
+        self.now = 10
+        self.assertEqual(self.invoke([ITEM])['event'], 'waiting')
+        self.assertEqual(self.saved()['poll_settling']['since'], 10)
+        self.now = 13
+        self.assertEqual(self.invoke([ITEM])['event'], 'feedback')
 
     def test_disappeared_batch_does_not_leave_an_old_timer(self):
-        self.invoke([ITEM])
+        self.assertEqual(self.invoke([ITEM])['event'], 'waiting')
         self.now = 2
-        self.invoke([])
+        self.assertEqual(self.invoke([])['event'], 'waiting')
+        self.assertNotIn('poll_settling', self.saved())
         self.now = 4
         self.assertEqual(self.invoke([ITEM])['event'], 'waiting')
         self.now = 7
