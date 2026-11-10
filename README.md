@@ -134,6 +134,8 @@ Use `watch-pr-feedback` with a PR URL. It polls the PR with `gh` (every 60 secon
 $devflow:watch-pr-feedback https://github.com/OWNER/REPO/pull/123 Poll every 2 minutes, stop after 1 hour, do not post replies.
 ```
 
+Optional `hybrid` mode uses a local `gh webhook forward` receiver to wake the helper, with full reconciliation every 5 minutes and 60-second polling fallback when the receiver is unavailable. It persists settling and unacknowledged batches for restart recovery. Ask for hybrid explicitly; poll remains the default. See [hybrid setup and lifecycle](skills/watch-pr-feedback/references/hybrid.md). The forwarding extension is for local development/testing, not production hosting.
+
 Comments from your own `gh` account are ignored by default, so the replies it posts do not trigger new rounds. Limits you give apply to every round. It never merges, force-pushes or re-runs CI. The packaged polling script was tested against a real merged PR and with mocked events; a full live watch remains unverified.
 
 ### Audit a repository before fixing bugs

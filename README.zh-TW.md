@@ -134,6 +134,8 @@ PR head 上失敗的 CI checks 也會當作待處理的意見，即使沒有任�
 $devflow:watch-pr-feedback https://github.com/OWNER/REPO/pull/123 每 2 分鐘檢查一次，1 小時後停止，不要回覆留言。
 ```
 
+可明確指定 `hybrid` 模式：使用本機 `gh webhook forward` 接收事件喚醒 helper，每 5 分鐘完整補查；接收器不可用時退回每 60 秒輪詢。評論合併等待與未確認批次會持久保存，支援中斷後復原。預設仍是 poll；設定與停止步驟見 [hybrid 操作說明](skills/watch-pr-feedback/references/hybrid.md)。此轉送方式適用本機開發與測試，不是正式環境 webhook hosting。
+
 預設忽略你自己 `gh` 帳號的留言，避免它發出的回覆再觸發新一輪。你指定的限制會套用到每一輪。它不會 merge、force push 或重新執行 CI。輪詢腳本已對實際已合併的 PR 及模擬事件測試；完整的實際監看流程尚未驗證。
 
 ### 完整審查 repository，先討論再修正
