@@ -187,7 +187,8 @@ def git_root(path: Path) -> Path | None:
         if "not a git repository" in message.lower() and not has_git_marker(path):
             return None
         raise SystemExit(f"git could not inspect the target, so no inventory was created: {message or exc}")
-    return Path(git_text(result.stdout).strip()).resolve()
+    # Remove Git's record terminator, not whitespace that belongs to the path.
+    return Path(git_text(result.stdout).removesuffix("\n")).resolve()
 
 
 def resolve_target(requested: Path) -> tuple[Path, bool]:
@@ -199,7 +200,7 @@ def resolve_target(requested: Path) -> tuple[Path, bool]:
         return top, True
     # Ask Git where the request sits inside the work tree; comparing path strings
     # breaks when the request is spelled in another letter case or Unicode form.
-    prefix = git_text(run_git(requested, ["rev-parse", "--show-prefix"]).stdout).strip().rstrip("/")
+    prefix = git_text(run_git(requested, ["rev-parse", "--show-prefix"]).stdout).removesuffix("\n").rstrip("/")
     if not prefix:
         raise SystemExit(f"git reports the work tree {top}, which does not contain {requested}; no inventory was created")
     if run_git(top, ["check-ignore", "-q", "--", prefix], check=False).returncode == 0:

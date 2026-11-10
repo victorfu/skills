@@ -269,6 +269,26 @@ class InventoryTests(unittest.TestCase):
         self.assertIn('inventorying its root', result.stderr)
         self.assertIn('tracked.py', {item['path'] for item in self.ledger()['files']})
 
+    def test_ignored_target_with_leading_space_is_inventoried_itself(self):
+        (self.repo / '.gitignore').write_bytes(b'/ scratch/\n')
+        target = self.repo / ' scratch'
+        target.mkdir()
+        (target / 'real.py').write_bytes(b'print(1)\n')
+        self.git('check-ignore', '-q', '--', ' scratch')
+        self.run_helper('create', '--repo', str(target), '--out', str(self.out))
+        ledger = self.ledger()
+        self.assertEqual(Path(ledger['repo_root']), target.resolve())
+        self.assertEqual([item['path'] for item in ledger['files']], ['real.py'])
+
+    @unittest.skipUnless(os.name == 'posix', 'requires a directory name ending in whitespace')
+    def test_repository_root_with_trailing_space(self):
+        renamed = self.repo.with_name('repo ')
+        self.repo.rename(renamed)
+        self.repo = renamed
+        ledger = self.create()
+        self.assertEqual(Path(ledger['repo_root']), self.repo.resolve())
+        self.assertIn('tracked.py', {item['path'] for item in ledger['files']})
+
     def test_nul_bytes_exclude_only_files_without_a_text_extension(self):
         (self.repo / 'query.sql').write_bytes('SELECT 1;\n'.encode('utf-16-le'))
         (self.repo / 'blob.dat').write_bytes(b'\x00\x01\x02')

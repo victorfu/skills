@@ -31,6 +31,59 @@ def state():
             'ci_reported': [], 'quiet_since': 0, 'settling': {}}
 
 
+class PollTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.path = Path(self.temp.name) / 'state.json'
+        self.now = 0
+        api.save_state(self.path, {'target': TARGET, 'head': 'abc', 'seen': [],
+                                   'quiet_since': 0, 'ci_reported': []})
+
+    def invoke(self, items, max_wait=0):
+        argv = ['watch_pr.py', PR['url'], '--state', str(self.path), '--include-self',
+                '--interval', '1', '--settle', '3', '--max-wait', str(max_wait)]
+
+        def sleep(seconds):
+            self.now += seconds
+
+        with patch.object(sys, 'argv', argv), patch.object(api, 'fetch_pr', return_value=PR), \
+                patch.object(api, 'fetch_feedback', return_value=items), \
+                patch.object(api, 'fetch_checks', return_value=[]), \
+                patch.object(api.time, 'time', side_effect=lambda: self.now), \
+                patch.object(api.time, 'sleep', side_effect=sleep), redirect_stdout(io.StringIO()) as output:
+            api.main()
+        return json.loads(output.getvalue())
+
+    def test_settle_survives_waiting_and_delivers_once(self):
+        self.assertEqual(self.invoke([ITEM], max_wait=1)['event'], 'waiting')
+        self.assertEqual(self.invoke([ITEM], max_wait=1)['event'], 'waiting')
+        event = self.invoke([ITEM], max_wait=1)
+        self.assertEqual(event['event'], 'feedback')
+        self.assertEqual(event['items'], [ITEM])
+        self.assertEqual(self.now, 3)
+        self.assertEqual(self.invoke([ITEM])['event'], 'waiting')
+
+    def test_new_comment_restarts_persisted_settle(self):
+        self.invoke([ITEM])
+        other = dict(ITEM, key='review_comment:2')
+        self.now = 2
+        self.assertEqual(self.invoke([ITEM, other])['event'], 'waiting')
+        self.now = 3
+        self.assertEqual(self.invoke([ITEM, other])['event'], 'waiting')
+        self.now = 5
+        self.assertEqual(self.invoke([ITEM, other])['items'], [ITEM, other])
+
+    def test_disappeared_batch_does_not_leave_an_old_timer(self):
+        self.invoke([ITEM])
+        self.now = 2
+        self.invoke([])
+        self.now = 4
+        self.assertEqual(self.invoke([ITEM])['event'], 'waiting')
+        self.now = 7
+        self.assertEqual(self.invoke([ITEM])['event'], 'feedback')
+
+
 class HybridTests(unittest.TestCase):
     def test_batch_survives_restart_and_ack_is_idempotent(self):
         value = state()

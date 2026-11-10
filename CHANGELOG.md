@@ -4,6 +4,8 @@ Behavior changes to the skills and the plugin package, newest first. These skill
 
 ## Unreleased
 
+- `audit-repository` preserves whitespace in Git paths, so ignored targets with leading spaces and repository roots with trailing spaces are inventoried correctly.
+- `watch-pr-feedback` preserves poll-mode settling across helper restarts, so a settle window longer than one `--max-wait` can complete.
 - `watch-pr-feedback` adds opt-in hybrid mode: local `gh webhook forward` wakeups, 5-minute reconciliation, polling fallback, durable acknowledged batches and restart recovery. Poll remains the default.
 
 ## 0.7.0 (2026-11-10)

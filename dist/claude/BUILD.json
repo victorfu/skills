@@ -8,7 +8,7 @@
     "skills/address-review-feedback/SKILL.md": "1840a925c6a10ea925f5bc3b93c254cbaa0c8eb8a901d085a64d8615577b1ce1",
     "skills/audit-repository/SKILL.md": "5fe0da33aec21d4fb3d84211f47b6dd8e4817580654b4a02098365cf35b94c9c",
     "skills/audit-repository/assets/icon.svg": "8936b24f674a1250d999e2c2b5901374fb4240426f32bd1ae340c352a90d617d",
-    "skills/audit-repository/scripts/repo_inventory.py": "d8da28f01fd3198eafa0f1d9abdc6aaaa5d9cf62a0bf4436c54af53a3aadcb50",
+    "skills/audit-repository/scripts/repo_inventory.py": "e1e0af866f879ffe3234952ca33ad1eb50c560a84a5b49f228aec067d788f58d",
     "skills/resolve-github-issue/SKILL.md": "3999f6f9cada366b1c6db896be47f5af4a493053cf7d00e81d9a8ad6d206c52f",
     "skills/resolve-github-issue/references/auto-fix.md": "21881697622fa56790d78259cd810fd0e729c04da9255a396ed823e551d0d941",
     "skills/resolve-github-issue/references/github-workflow.md": "a26fa99fa06654009ff1df730e0efc1a2f3e8a44730ccf798c7e3281f82db6c2",
@@ -16,7 +16,7 @@
     "skills/watch-pr-feedback/SKILL.md": "475e804a0573c38ad4295974584ead4737043cc01db28fc310132b9f811f2143",
     "skills/watch-pr-feedback/references/hybrid.md": "324a427397d83799329488f82d16d76634b94de08d65e2f9447c0d679bb6b8d3",
     "skills/watch-pr-feedback/scripts/hybrid_watch.py": "330876dfce1b19c7767a6e19292fdcdb2c4a321d4050a3abc074cdfbf14c922b",
-    "skills/watch-pr-feedback/scripts/watch_pr.py": "2a1a5e3a62bfb59d6aa2b5105fa51beb4ddbb21ffa745379798dd57fa50f49bd",
+    "skills/watch-pr-feedback/scripts/watch_pr.py": "da9f79b2508cb62845a350a65bec4c87c72ee5d6bceac35144b756fa88145a8b",
     "skills/watch-pr-feedback/scripts/webhook_receiver.py": "3cb9e6b2a85ab391190e51b19e3aa012e169c0d55c55ee3a1ef2a87e364591b6"
   }
 }

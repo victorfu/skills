@@ -10,7 +10,7 @@
     "skills/audit-repository/SKILL.md": "44baceae9b07c66c7a49e4712f18a9973e7838a34e48c357ea6c304db8579971",
     "skills/audit-repository/agents/openai.yaml": "d869ef58b6b24baad297e4dde258fe88211a414146df2b3e08cf159da3337ce9",
     "skills/audit-repository/assets/icon.svg": "8936b24f674a1250d999e2c2b5901374fb4240426f32bd1ae340c352a90d617d",
-    "skills/audit-repository/scripts/repo_inventory.py": "d8da28f01fd3198eafa0f1d9abdc6aaaa5d9cf62a0bf4436c54af53a3aadcb50",
+    "skills/audit-repository/scripts/repo_inventory.py": "e1e0af866f879ffe3234952ca33ad1eb50c560a84a5b49f228aec067d788f58d",
     "skills/resolve-github-issue/SKILL.md": "a408b391739afe15b5c280c92d11468f03a0e534f99f37e2eeef91d4aec4d517",
     "skills/resolve-github-issue/agents/openai.yaml": "8cf2450cde5dd9b9696b4161ae5800a13ad962baa01c0cb0eb2041f95501c0a1",
     "skills/resolve-github-issue/references/auto-fix.md": "21881697622fa56790d78259cd810fd0e729c04da9255a396ed823e551d0d941",
@@ -20,7 +20,7 @@
     "skills/watch-pr-feedback/agents/openai.yaml": "49450c54ac604d6530bba9ff1374e206db2dda7c131c6e32d1879ba9b437e337",
     "skills/watch-pr-feedback/references/hybrid.md": "324a427397d83799329488f82d16d76634b94de08d65e2f9447c0d679bb6b8d3",
     "skills/watch-pr-feedback/scripts/hybrid_watch.py": "330876dfce1b19c7767a6e19292fdcdb2c4a321d4050a3abc074cdfbf14c922b",
-    "skills/watch-pr-feedback/scripts/watch_pr.py": "2a1a5e3a62bfb59d6aa2b5105fa51beb4ddbb21ffa745379798dd57fa50f49bd",
+    "skills/watch-pr-feedback/scripts/watch_pr.py": "da9f79b2508cb62845a350a65bec4c87c72ee5d6bceac35144b756fa88145a8b",
     "skills/watch-pr-feedback/scripts/webhook_receiver.py": "3cb9e6b2a85ab391190e51b19e3aa012e169c0d55c55ee3a1ef2a87e364591b6"
   }
 }
