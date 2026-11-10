@@ -14,6 +14,7 @@ tools/test_build.py                Packaging regression tests (run in a temporar
 dist/claude/, dist/codex/          Generated plugins (commit them; do not edit by hand)
 .claude-plugin/marketplace.json    Generated Claude Code marketplace
 .agents/plugins/marketplace.json   Generated Codex marketplace
+docs/skills/<name>.md              One user-facing page per skill (not packaged)
 docs/verification.md               Research and verification notes
 CHANGELOG.md                       User-facing changes per release; add a line under Unreleased with each change
 .out-of-scope/                     One file per idea this repo decided against, with the reason
@@ -88,7 +89,8 @@ Before testing against real issues, use read-only mode ("assess only, don't chan
 1. Create `skills/<name>/SKILL.md`. Its frontmatter may contain only `name` (must equal the directory name, lowercase with hyphens) and `description`. Every skill here is user-invoked, so write the description for a person browsing the skill list: a one- or two-sentence summary of what it does. Keep invocation rules and scope limits in the body.
 2. Create `skills/<name>/agents/openai.yaml` with `interface.display_name`, `short_description` (25 to 64 characters), a `default_prompt` containing `$<plugin-name>:<name>`, and `policy.allow_implicit_invocation: false`. `<plugin-name>` must match `name` in `release.json`; this repo uses `$devflow:<name>`, and the build checks the full invocation name.
 3. Relative links in the `SKILL.md` body must point to files that actually exist inside the skill directory.
-4. Run the build and tests; `build.py` picks up every skill under `skills/` automatically.
+4. Write `docs/skills/<name>.md`, the page a user reads to decide whether to reach for the skill. Keep the sections of the existing pages: What it does, When to reach for it, Prerequisites, Common questions, It's working if, Where it fits. Explain when and why, not the steps; each "It's working if" bullet must be checkable without opening `SKILL.md`. Update the page whenever the skill's behavior changes. The build fails when a skill has no page.
+5. Run the build and tests; `build.py` picks up every skill under `skills/` automatically.
 
 ## Releasing a new version
 

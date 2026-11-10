@@ -6,9 +6,9 @@
 
 | Skill | 用途 |
 | --- | --- |
-| `resolve-github-issue` | 給它一個 GitHub issue，它會先驗證問題是否成立，再修正、測試、審查，最後開 PR。 |
-| `address-review-feedback` | 先對照目前程式碼驗證 review 意見與失敗的 CI，再處理成立的修改；說明不成立、已修正及待釐清的項目。 |
-| `watch-pr-feedback` | 用 `gh` 監看 PR，每有新的 review comments 或 CI 失敗就執行 `address-review-feedback`，直到不再有新意見。 |
+| [`resolve-github-issue`](docs/skills/resolve-github-issue.md) | 給它一個 GitHub issue，它會先驗證問題是否成立，再修正、測試、審查，最後開 PR。 |
+| [`address-review-feedback`](docs/skills/address-review-feedback.md) | 先對照目前程式碼驗證 review 意見與失敗的 CI，再處理成立的修改；說明不成立、已修正及待釐清的項目。 |
+| [`watch-pr-feedback`](docs/skills/watch-pr-feedback.md) | 用 `gh` 監看 PR，每有新的 review comments 或 CI 失敗就執行 `address-review-feedback`，直到不再有新意見。 |
 
 ## 需求
 

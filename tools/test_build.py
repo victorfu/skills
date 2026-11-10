@@ -26,6 +26,7 @@ class BuildTests(unittest.TestCase):
         shutil.copytree(build.ROOT / 'assets', self.root / 'assets')
         shutil.copyfile(build.ROOT / 'release.json', self.root / 'release.json')
         shutil.copyfile(build.ROOT / 'CHANGELOG.md', self.root / 'CHANGELOG.md')
+        shutil.copytree(build.ROOT / 'docs/skills', self.root / 'docs/skills')
         build.ROOT = self.root
         self.addCleanup(setattr, build, 'ROOT', self.original_root)
 
@@ -105,6 +106,7 @@ class BuildTests(unittest.TestCase):
         shutil.copytree(source, new)
         for p in (new / 'SKILL.md', new / 'agents/openai.yaml'):
             write_lf(p, p.read_text(encoding='utf-8').replace('resolve-github-issue', 'another-workflow').replace('Resolve GitHub Issue', 'Another Workflow'))
+        write_lf(self.root / 'docs/skills/another-workflow.md', '# another-workflow\n')
         self.run_build()
         self.assertTrue((self.root / 'dist/codex/skills/another-workflow/SKILL.md').is_file())
         shutil.rmtree(new)
@@ -154,6 +156,11 @@ class BuildTests(unittest.TestCase):
         release['version'] = '99.0.0'
         write_lf(path, json.dumps(release))
         with self.assertRaisesRegex(ValueError, 'CHANGELOG.md has no entry for 99.0.0'):
+            self.run_build()
+
+    def test_reject_skill_without_docs_page(self):
+        (self.root / 'docs/skills/resolve-github-issue.md').unlink()
+        with self.assertRaisesRegex(ValueError, 'Missing docs page'):
             self.run_build()
 
     def test_reject_empty_frontmatter(self):

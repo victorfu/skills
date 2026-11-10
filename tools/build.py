@@ -85,6 +85,7 @@ def expected_files():
         invocation = f"${release['name']}:{skill.name}"
         require(invocation in re.findall(r'\$[a-z0-9:-]+', ui['interface']['default_prompt']), 'Missing plugin-qualified invocation name')
         require('$ARGUMENTS' not in data.decode('utf-8'), 'Use the neutral input contract')
+        require((ROOT / 'docs/skills' / f'{skill.name}.md').is_file(), f'Missing docs page: docs/skills/{skill.name}.md')
         for link in re.findall(r'\]\(([^)]+)\)', body):
             if '://' not in link and not link.startswith('#'):
                 target = (skill / link.split('#')[0]).resolve()

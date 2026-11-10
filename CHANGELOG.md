@@ -9,6 +9,7 @@ What changed for people who use the plugin, newest first. Add a line under **Unr
 - `resolve-github-issue` hands its fix to a fresh-context subagent for review, and falls back to a self-review on clients without a subagent tool.
 - `resolve-github-issue` writes PR bodies from a template: Problem, Change, Evidence, Impact, Review, Merge risk.
 - Added this changelog and `.out-of-scope/`, the record of ideas this repo decided against.
+- Each skill has a user-facing page under `docs/skills/`: when to reach for it, and how to tell it is working.
 
 ## 0.6.0 (2026-11-10)
 

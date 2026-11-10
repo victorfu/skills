@@ -6,9 +6,9 @@ Development workflow skills for [Claude Code](https://code.claude.com) and [Code
 
 | Skill | Purpose |
 | --- | --- |
-| `resolve-github-issue` | Give it a GitHub issue: it first verifies the problem is real, then fixes, tests, and reviews it, and finally opens a PR. |
-| `address-review-feedback` | Verify review feedback and failing CI against current code before applying justified fixes; explain rejected, already-fixed and blocked concerns. |
-| `watch-pr-feedback` | Watch a PR with `gh` and run `address-review-feedback` on each new batch of review comments or failing CI, until no new feedback arrives. |
+| [`resolve-github-issue`](docs/skills/resolve-github-issue.md) | Give it a GitHub issue: it first verifies the problem is real, then fixes, tests, and reviews it, and finally opens a PR. |
+| [`address-review-feedback`](docs/skills/address-review-feedback.md) | Verify review feedback and failing CI against current code before applying justified fixes; explain rejected, already-fixed and blocked concerns. |
+| [`watch-pr-feedback`](docs/skills/watch-pr-feedback.md) | Watch a PR with `gh` and run `address-review-feedback` on each new batch of review comments or failing CI, until no new feedback arrives. |
 
 ## Requirements
 
