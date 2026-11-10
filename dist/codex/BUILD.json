@@ -8,7 +8,7 @@
     "skills/address-review-feedback/SKILL.md": "59538ab7b7c5d03e860a105b3ee2be990abf96fc7b2fe5e70665927d846bd8ef",
     "skills/address-review-feedback/agents/openai.yaml": "f2a9709b8f2b1d8fc9c011c8b8218f415fc5c69a593ace8e46ec90dd427e81d6",
     "skills/address-review-feedback/references/github-operations.md": "ac070170eeabedab94c201cf77d56eb04dad87e579f28b71973bde820fd80d18",
-    "skills/resolve-github-issue/SKILL.md": "e30c673e9565ab3f4b2b9f84af13e020adcf65adaeeb210c45eef4890f6d383b",
+    "skills/resolve-github-issue/SKILL.md": "4688e0bfe7a288d9bd7945886de24a7aa8c0d1bc818b4713647eb1c4bce7f396",
     "skills/resolve-github-issue/agents/openai.yaml": "8cf2450cde5dd9b9696b4161ae5800a13ad962baa01c0cb0eb2041f95501c0a1",
     "skills/resolve-github-issue/references/github-workflow.md": "fcb09bbf6364b28f541bfedf8bba1d68c58ef5c46118775808f742fd32b8febe",
     "skills/resolve-github-issue/references/pr-auto-fix.md": "9cb980add9f2d5cd41f22631bc2b274ce8879888b23686d6539edec1ae435b8f",

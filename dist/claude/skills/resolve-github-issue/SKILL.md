@@ -29,7 +29,7 @@ Verify the user's issue with evidence, then deliver a fix as a PR. Reply in the 
    - Workspace: base SHA, worktree path and branch.
    - Impact: who is affected, what changes, planned checks and references to their actual Verification results (section 3).
    - Verification: commands actually run and their results, plus anything left unverified.
-   - Review: scope, findings and limitations (section 4).
+   - Review: reviewer, scope, findings and limitations (section 4).
    - Delivery: commit SHA, PR URL and CI state.
 
    The PR body and final reply are written from this record alone. When resuming, reconcile the record with the current GitHub and git state first, so existing side effects are reused.
@@ -76,14 +76,17 @@ A feature proposal needs clear requirements and acceptance criteria to be VALID.
 
 ## 4. Review the fix
 
-After the checks pass, review the change once as a step of its own, and describe it in the record as a self-review. Green tests are an input to the review, not a substitute:
+After the checks pass, hand the change to a reviewer that has not seen this conversation. Green tests are an input to the review, not a substitute.
 
-- Read the full diff against base with the relevant callers and tests, and compare it with the issue's acceptance criteria.
-- Compare the diff with the Impact field. For any code, caller or behavior the field does not list, update the field and run the checks it now calls for.
-- Check that the root cause is gone, along with edge inputs, error paths, compatibility, permissions, data consistency and any other behavior this change affects.
-- Confirm the diff holds only this task's work: no unrelated files, secrets, test output, debug logs or weakened assertions.
-- Fix each provable problem, re-run the related verification and review the final version again, until no substantive problem remains.
-- Fill the Review field. Only a file state that passed both the checks and the review is committed; a later change sends its part back through both.
+1. Dispatch one subagent with a fresh context window; a fork of this conversation inherits the reasoning the review is meant to test. Give it only the canonical issue URL, the repo path, the base ref and branch, and the Impact field. It reads the issue and the diff itself, changes no files, performs no GitHub writes and reports findings with file and line. When the client has no subagent tool, run the brief yourself as a step of its own.
+2. The reviewer's brief:
+   - Read the full diff against base with the relevant callers and tests, and compare it with the issue's acceptance criteria.
+   - Compare the diff with the Impact field and report any code, caller or behavior the field does not list.
+   - Check that the root cause is gone, along with edge inputs, error paths, compatibility, permissions, data consistency and any other behavior this change affects.
+   - Confirm the diff holds only this task's work: no unrelated files, secrets, test output, debug logs or weakened assertions.
+3. Treat each finding as a claim: verify it against the code, then fix each provable problem and re-run the related verification. For anything the Impact field missed, update the field and run the checks it now calls for.
+4. Send a changed diff back through a new fresh-context review, until a review of the final version reports no substantive problem.
+5. Fill the Review field: who reviewed (fresh-context subagent or self-review), scope, findings and how each was settled, and limitations. Only a file state that passed both the checks and the review is committed; a later change sends its part back through both.
 
 ## 5. Commit, push and open a PR
 

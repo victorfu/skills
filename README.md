@@ -92,7 +92,7 @@ You can also pass just an issue reference, such as `OWNER/REPO#123`. If you leav
 1. Reads the issue and the relevant code, and classifies it as `VALID`, `INVALID`, `ALREADY_FIXED`, or `NEEDS_INFO`.
 2. Adds an `in progress` label to the issue; without permission to add labels, it skips this and tells you at the end.
 3. Fixes the root cause in a separate git worktree and branch (for example `fix/issue-123-short-slug`), and adds a regression test.
-4. Runs the tests and reviews the full diff.
+4. Runs the tests, then has a fresh-context subagent review the full diff (a self-review where the client has no subagent tool).
 5. Commits and pushes the fix branch, then opens a ready-for-review PR linked to the issue.
 
 For any result other than `VALID`, it changes no code, opens no PR, and removes the label it added.

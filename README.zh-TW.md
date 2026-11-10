@@ -92,7 +92,7 @@ $devflow:resolve-github-issue https://github.com/OWNER/REPO/issues/123
 1. 讀取 issue 與相關程式碼，判定為 `VALID`、`INVALID`、`ALREADY_FIXED` 或 `NEEDS_INFO`。
 2. 在 issue 加上 `in progress` label；沒有 label 權限時略過，並在最後告訴你。
 3. 在獨立的 git worktree 與分支（例如 `fix/issue-123-short-slug`）修正根因，並加入回歸測試。
-4. 執行測試，並審查完整 diff。
+4. 執行測試，再交給一個全新 context 的 subagent 審查完整 diff（客戶端沒有 subagent 工具時改為自我審查）。
 5. Commit、push 修正分支，開一個 ready for review 的 PR，並連結 issue。
 
 判定為 `VALID` 以外的結果時，不會修改程式碼或開 PR，並移除它自己加上的 label。
