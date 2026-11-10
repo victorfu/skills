@@ -51,7 +51,7 @@ After every change to `skills/`, `assets/`, `release.json` or `tools/`:
 ```sh
 .venv/bin/python tools/build.py
 .venv/bin/python tools/build.py --check
-.venv/bin/python -m unittest discover -s tools -p test_build.py -v
+.venv/bin/python -m unittest discover -s tools -p "test_*.py" -v
 claude plugin validate dist/claude --strict
 claude plugin validate .claude-plugin/marketplace.json --strict
 ```

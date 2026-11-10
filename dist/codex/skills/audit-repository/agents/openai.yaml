@@ -1,0 +1,8 @@
+interface:
+  display_name: "Audit Repository"
+  short_description: "Audit repositories for verified bugs before fixes"
+  default_prompt: "Use $devflow:audit-repository to audit the current repository or the repository I provide, verify each finding twice, and report coverage and bugs for discussion without changing code."
+  icon_small: "./assets/icon.svg"
+  icon_large: "./assets/icon.svg"
+policy:
+  allow_implicit_invocation: false
