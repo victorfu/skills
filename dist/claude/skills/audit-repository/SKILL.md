@@ -1,7 +1,7 @@
 ---
 disable-model-invocation: true
 name: audit-repository
-description: Audit a whole repository for verified, behavior-affecting bugs and report them with a coverage ledger. Read-only; findings are discussed before any fix. Honors an explicitly narrower scope.
+description: Audit a whole repository for verified, behavior-affecting bugs and report them with a coverage ledger, read-only and discussed before any fix. Honors an explicitly narrower scope.
 ---
 
 # Audit Repository
@@ -48,7 +48,7 @@ Use Traditional Chinese for the report unless the user explicitly requests anoth
 ## Inputs and target selection
 
 - Run only when explicitly invoked. Mentioning this skill, discussing its design, or pasting a repository URL alone does not start an audit.
-- This is a complete repository audit even when failure evidence is supplied; investigate that evidence first, then finish the full coverage ledger. Honor any explicit narrower scope and report it as a scoped audit, never as repository-wide coverage.
+- This is a complete repository audit even when failure evidence is supplied; investigate that evidence first, then finish the full coverage ledger. Honor any explicit narrower scope and report it as a scoped audit, never as repository-wide coverage. The ledger always inventories the whole repository: for a scoped audit, write the out-of-scope paths to a file and mark them once with `mark --status excluded-confirmed --paths-file <file> --note "outside requested scope: <scope>"`, then state the scope and that count in the report.
 - Use the current shell's quoting and temporary-directory conventions on macOS, Windows, and Linux. The helper requires Python 3.10 or later and only the standard library; use the available Python launcher (for example `python3` or `py -3`). Do not assume Bash or `/tmp`.
 
 Accept any of these inputs:
@@ -138,7 +138,9 @@ The helper writes:
 
 `create` exits 1 without writing a ledger when Git cannot inspect the target (git missing from PATH, a "dubious ownership" refusal, a damaged repository, a bare repository) or when a directory cannot be listed. Resolve the cause and run it again; an inventory built around the failure would be missing files.
 
-If Python or the helper cannot run, reproduce the same accounting with `git ls-files -z --cached --others --exclude-standard` and maintain an equivalent explicit ledger. State that fallback in the report.
+`create` replaces any ledger already in `AUDIT_DIR`, discarding its marks, and removes it even when the new inventory fails. Use a fresh `AUDIT_DIR` for each audit, and run `create` once.
+
+If Python or the helper cannot run, reproduce the same accounting with `git ls-files -z --cached --others --exclude-standard` and maintain an equivalent explicit ledger. Treat any warning Git prints while listing as an incomplete inventory. This fallback covers Git repositories only; for a plain directory, list every file yourself. State the fallback in the report.
 
 ### 3. Resolve every scope decision
 
@@ -148,7 +150,8 @@ For each entry in `decision-list.txt`, determine whether it is authoritative fir
 - **Vendored code:** exclude third-party code only when provenance is clear and local modifications are absent or irrelevant. Review local patches, forks, adapters, or authoritative vendored runtime code.
 - **Symlink:** inspect the link target without following outside the repository automatically. Include an in-repository authoritative target; disclose an external target.
 - **Encoded text** (`encoded-text`, `binary-or-encoded-text`): the file has a UTF-16/UTF-32 BOM, or NUL bytes under a text extension. Decode it and review it as source; exclude it only when it is confirmed to be binary data.
-- **Skipped directory** (`pruned-directory`, non-Git mode only): the helper did not list files under dependency or build-output directories such as `vendor/` or `build/`. Inspect the directory. Exclude it when it is third-party or reproducible output; otherwise review its files by hand and mark the directory entry `reviewed`, naming what was read in `--note`.
+- **Skipped directory** (`pruned-directory`, non-Git mode only): the helper did not list files under dependency, build-output or cache directories such as `vendor/`, `build/` or `__pycache__/`. Inspect the directory. Exclude it when it is third-party or reproducible output; otherwise review its files by hand and mark the directory entry `reviewed`, naming what was read in `--note`. Only version-control metadata (`.git`, `.hg`, `.svn`) is skipped without an entry.
+- **Directory entries in general** (`pruned-directory`, `submodule`, `directory-entry`): the files underneath are not in the ledger, so one mark stands for all of them. `reviewed` on such an entry requires `--note` and a directory that can be listed.
 - **Submodule:** record the pinned commit and role. Do not fetch or execute it automatically. Include it only when the user’s requested scope clearly treats it as first-party and access is safe.
 
 Mark each exact decision only after it is resolved:
@@ -163,7 +166,7 @@ python3 "$SKILL_DIR/scripts/repo_inventory.py" mark \
 
 Use `reviewed` instead of `excluded-confirmed` when the file was fully reviewed. `excluded-confirmed` requires `--note` with the file-specific reason, and the helper rejects it without one. Never mark the whole `decision-list.txt` excluded without file-specific confirmation.
 
-The other statuses: `context-reviewed` records that a context entry (documentation, a lockfile) was inspected and is accepted for context entries only; `unreadable` records that an entry could not be read. An unreadable entry cannot be marked `reviewed` while it still cannot be read.
+The other statuses: `context-reviewed` records that a context entry (documentation, a lockfile) was inspected and is accepted for context entries only; `unreadable` records that an entry could not be read. `reviewed` is refused for any entry that cannot be read at the moment it is marked, whatever its earlier status. For a tracked file that was deleted in the working tree, use `excluded-confirmed` with a note saying so.
 
 ### 4. Build a code and data-flow map
 
@@ -209,7 +212,7 @@ python3 "$SKILL_DIR/scripts/repo_inventory.py" mark \
   --path "src/example.py"
 ```
 
-For many completed files, pass an exact newline-delimited UTF-8 list through `--paths-file` or `--stdin`. Add only files actually read in full. A rejected `mark` (exit 2: an unknown path, or a status the entry cannot take) changes nothing; fix the batch and run it again.
+For many completed files, pass an exact newline-delimited UTF-8 list through `--paths-file` or `--stdin`. Add only files actually read in full. Paths must be written exactly as they appear in the list files: forward slashes on every platform, and a trailing `/` on directory entries. A rejected `mark` (exit 2: an unknown path, or a status the entry cannot take) changes nothing; fix the batch and run it again. Run `mark` from one process at a time: concurrent calls overwrite each other's updates, so subagents return their reviewed paths and the primary agent marks them.
 
 When subagents are available and the repository is large, partition the ledger into non-overlapping path sets. Require each subagent to return reviewed paths, candidate evidence, and unresolved dependencies. The primary agent must independently double-check every reported finding and merge coverage without gaps or duplicate claims.
 
@@ -270,7 +273,7 @@ python3 "$SKILL_DIR/scripts/repo_inventory.py" status \
   --show-pending
 ```
 
-Exit code `0` means every entry has a completed disposition. Exit code `2` means coverage is incomplete: an entry is still pending, undecided or unreadable, an entry has a status the helper does not know, or the inventory is empty. Continue reviewing while such entries remain.
+Exit code `0` means every entry has a completed disposition. Exit code `2` means coverage is incomplete: an entry is still pending, undecided or unreadable, an entry has a status the helper does not know, or the inventory is empty. Continue reviewing while such entries remain. Exit code `1` means the ledger is missing or malformed; a command-line usage error also exits `2`, with a usage message instead of a summary.
 
 The ledger tracks dispositions, not proof of reading. Inspect relevant context files; promote executable documentation (such as agent skills or runnable examples) to full review when it is authoritative behavior. The summary's `review_scope` counts review-required files that were excluded instead of reviewed; report that number, and the reason for each, under Coverage. The ledger is a snapshot taken by `create`: files added or changed afterwards are not in it.
 

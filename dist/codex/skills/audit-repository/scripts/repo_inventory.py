@@ -6,8 +6,10 @@ non-ignored files for Git repositories, classifies review scope, and records whi
 files were actually reviewed or explicitly excluded after confirmation.
 
 Anything that could hide a file from the audit is either fatal (a Git failure, a
-directory that cannot be listed) or an entry that blocks completion (a directory
-skipped in non-Git mode, text in an unexpected encoding, an empty inventory).
+directory that cannot be listed) or an entry that blocks completion (a dependency,
+build-output or cache directory skipped in non-Git mode, text in an unexpected
+encoding, an empty inventory). Only version-control metadata (.git, .hg, .svn) is
+skipped without an entry.
 """
 
 from __future__ import annotations
@@ -79,9 +81,9 @@ GENERATED_DIR_NAMES = {
     "build", "coverage", "dist", "generated", "gen", "htmlcov", "out", "target",
 }
 
-NON_GIT_PRUNE_DIRS = VENDOR_DIR_NAMES | GENERATED_DIR_NAMES | {
-    ".git", ".hg", ".svn", "__pycache__", ".idea", ".vscode",
-}
+VCS_DIR_NAMES = {".git", ".hg", ".svn"}
+
+NON_GIT_PRUNE_DIRS = VENDOR_DIR_NAMES | GENERATED_DIR_NAMES | VCS_DIR_NAMES | {"__pycache__"}
 
 # Checked against the first non-empty lines only; a phrase deeper in a file is prose or data.
 GENERATED_PATTERN = re.compile(
@@ -125,19 +127,43 @@ def notice(message: str) -> None:
     print(message, file=sys.stderr)
 
 
-def run_git(repo: Path, args: Sequence[str], *, check: bool = True) -> subprocess.CompletedProcess[bytes]:
+# Inherited from a hook or `rebase --exec`, these would point Git at another repository or index.
+GIT_REDIRECT_VARIABLES = ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_COMMON_DIR", "GIT_PREFIX")
+
+
+def git_environment() -> dict[str, str]:
+    env = {key: value for key, value in os.environ.items() if key not in GIT_REDIRECT_VARIABLES}
     # LC_ALL=C keeps Git's messages in English, so they can be told apart below.
+    # GIT_OPTIONAL_LOCKS=0 stops `git status` from refreshing .git/index in the target.
+    env.update({"LC_ALL": "C", "LANGUAGE": "C", "GIT_OPTIONAL_LOCKS": "0"})
+    return env
+
+
+def run_git(repo: Path, args: Sequence[str], *, check: bool = True) -> subprocess.CompletedProcess[bytes]:
     return subprocess.run(
         ["git", "-C", str(repo), *args],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         check=check,
-        env={**os.environ, "LC_ALL": "C", "LANGUAGE": "C"},
+        env=git_environment(),
     )
 
 
+def same_directory(first: Path, second: Path) -> bool:
+    # Identity, not spelling: on a case-insensitive filesystem two spellings name one directory.
+    try:
+        return os.path.samefile(first, second)
+    except OSError:
+        return False
+
+
+def git_text(data: bytes) -> str:
+    # Git prints paths as bytes, normally UTF-8. os.fsdecode would raise on Windows for anything else.
+    return data.decode("utf-8", errors=PATH_ERRORS)
+
+
 def git_stderr(exc: subprocess.CalledProcessError) -> str:
-    return os.fsdecode(exc.stderr or b"").strip()
+    return git_text(exc.stderr or b"").strip()
 
 
 def has_git_marker(path: Path) -> bool:
@@ -161,7 +187,7 @@ def git_root(path: Path) -> Path | None:
         if "not a git repository" in message.lower() and not has_git_marker(path):
             return None
         raise SystemExit(f"git could not inspect the target, so no inventory was created: {message or exc}")
-    return Path(os.fsdecode(result.stdout).strip()).resolve()
+    return Path(git_text(result.stdout).strip()).resolve()
 
 
 def resolve_target(requested: Path) -> tuple[Path, bool]:
@@ -169,10 +195,14 @@ def resolve_target(requested: Path) -> tuple[Path, bool]:
     top = git_root(requested)
     if top is None:
         return requested, False
-    if top == requested:
+    if same_directory(top, requested):
         return top, True
-    relative = requested.relative_to(top).as_posix()
-    if run_git(top, ["check-ignore", "-q", "--", relative], check=False).returncode == 0:
+    # Ask Git where the request sits inside the work tree; comparing path strings
+    # breaks when the request is spelled in another letter case or Unicode form.
+    prefix = git_text(run_git(requested, ["rev-parse", "--show-prefix"]).stdout).strip().rstrip("/")
+    if not prefix:
+        raise SystemExit(f"git reports the work tree {top}, which does not contain {requested}; no inventory was created")
+    if run_git(top, ["check-ignore", "-q", "--", prefix], check=False).returncode == 0:
         notice(f"note: {requested} is ignored by the enclosing Git repository {top}; inventorying it as a non-Git directory")
         return requested, False
     notice(f"note: --repo is inside a Git repository; inventorying its root {top}")
@@ -180,17 +210,14 @@ def resolve_target(requested: Path) -> tuple[Path, bool]:
 
 
 def is_within(child: Path, parent: Path) -> bool:
-    try:
-        child.resolve().relative_to(parent.resolve())
-        return True
-    except ValueError:
-        return False
+    """True when child is parent or lies under it; child need not exist yet."""
+    return any(same_directory(candidate, parent) for candidate in (child, *child.parents))
 
 
 def git_paths(root: Path) -> tuple[list[str], list[str]]:
     result = run_git(root, ["ls-files", "-z", "--cached", "--others", "--exclude-standard"])
-    paths = sorted({os.fsdecode(item) for item in result.stdout.split(b"\0") if item})
-    warnings = [line for line in os.fsdecode(result.stderr).splitlines() if line.strip()]
+    paths = sorted({git_text(item) for item in result.stdout.split(b"\0") if item})
+    warnings = [line for line in git_text(result.stderr).splitlines() if line.strip()]
     # Git exits 0 but only warns when it cannot open a directory while looking for
     # untracked files. An incomplete traversal must not produce a ledger.
     unlisted = [line for line in warnings if "could not open directory" in line]
@@ -227,9 +254,9 @@ def non_git_paths(root: Path) -> tuple[list[str], list[dict[str, str]]]:
 
 
 def pruned_directory_entry(pruned: dict[str, str]) -> dict[str, Any] | None:
-    """A skipped vendor or build directory needs a decision; VCS and editor state does not."""
+    """Every skipped directory needs a decision, except version-control metadata."""
     name = pruned["path"].rstrip("/").rsplit("/", 1)[-1].lower()
-    if name not in VENDOR_DIR_NAMES | GENERATED_DIR_NAMES:
+    if name in VCS_DIR_NAMES:
         return None
     return {
         "path": pruned["path"],
@@ -237,8 +264,8 @@ def pruned_directory_entry(pruned: dict[str, str]) -> dict[str, Any] | None:
         "kind": "pruned-directory",
         "scope": "decision",
         "status": "pending-decision",
-        "reason": "directory was not inventoried in non-Git mode; confirm it is third-party or generated output, "
-                  "or review its files, before marking it",
+        "reason": "directory was not inventoried in non-Git mode; confirm it is third-party, generated or cache "
+                  "output, or review its files, before marking it",
     }
 
 
@@ -255,6 +282,22 @@ def text_bom(sample: bytes) -> str | None:
         if sample.startswith(bom):
             return encoding
     return None
+
+
+def looks_like_wide_text(sample: bytes) -> bool:
+    """UTF-16/32 text without a BOM: NUL bytes fill one byte position and not the other."""
+    even, odd = sample[0::2], sample[1::2]
+    if not even or not odd:
+        return False
+    ratios = sorted((even.count(0) / len(even), odd.count(0) / len(odd)))
+    # Zero-filled or mostly-zero binary data has NULs in both positions.
+    return ratios[1] >= 0.6 and ratios[0] <= 0.55
+
+
+def has_text_name(name: str, suffix: str) -> bool:
+    lower = name.lower()
+    return (suffix in SOURCE_EXTENSIONS or suffix in CONTEXT_EXTENSIONS or name in SPECIAL_REVIEW_FILENAMES
+            or lower.startswith(("dockerfile", "makefile")))
 
 
 def generated_header(sample: bytes) -> bool:
@@ -354,15 +397,15 @@ def classify(root: Path, rel_path: str) -> dict[str, Any]:
         })
         return record
     if b"\0" in sample:
-        # UTF-16 or UTF-32 text without a BOM also contains NUL bytes, so a text
-        # extension is not excluded on that evidence alone.
-        if suffix in SOURCE_EXTENSIONS or is_context_doc or name in SPECIAL_REVIEW_FILENAMES:
+        # UTF-16 or UTF-32 text without a BOM also contains NUL bytes, so neither a text
+        # name nor the byte pattern of wide text is excluded on that evidence alone.
+        if has_text_name(name, suffix) or looks_like_wide_text(sample):
             record.update({
                 "kind": "binary-or-encoded-text",
                 "scope": "decision",
                 "status": "pending-decision",
-                "reason": "contains NUL bytes but has a text extension; may be UTF-16/UTF-32 text without a BOM. "
-                          "Inspect before excluding",
+                "reason": "contains NUL bytes but has a text name or the byte pattern of UTF-16/UTF-32 text "
+                          "without a BOM. Inspect before excluding",
             })
         else:
             record.update({
@@ -382,6 +425,16 @@ def classify(root: Path, rel_path: str) -> dict[str, Any]:
         })
         return record
 
+    # Before the generated check: lockfile headers say "autogenerated", and they are context.
+    if name in LOCKFILE_NAMES:
+        record.update({
+            "kind": "lockfile",
+            "scope": "context",
+            "status": "context",
+            "reason": "version/context evidence; inspect relevant entries rather than line-reviewing as source",
+        })
+        return record
+
     # Documentation quotes these phrases; only code and config headers count as evidence.
     header_says_generated = not is_context_doc and generated_header(sample)
     if path_has_dir(rel, GENERATED_DIR_NAMES) or lower_name.endswith(MINIFIED_SUFFIXES) or header_says_generated:
@@ -390,15 +443,6 @@ def classify(root: Path, rel_path: str) -> dict[str, Any]:
             "scope": "decision",
             "status": "pending-decision",
             "reason": "path/header appears generated or built; confirm source-of-truth and shipping role before excluding",
-        })
-        return record
-
-    if name in LOCKFILE_NAMES:
-        record.update({
-            "kind": "lockfile",
-            "scope": "context",
-            "status": "context",
-            "reason": "version/context evidence; inspect relevant entries rather than line-reviewing as source",
         })
         return record
 
@@ -435,26 +479,36 @@ def classify(root: Path, rel_path: str) -> dict[str, Any]:
     return record
 
 
-def git_metadata(root: Path) -> dict[str, Any]:
+def git_metadata(root: Path) -> tuple[dict[str, Any], list[str]]:
+    """Describe the checkout. A value Git could not report is None, never a plausible default."""
+    problems: list[str] = []
+
     def text(args: Sequence[str]) -> str | None:
         try:
-            return os.fsdecode(run_git(root, args).stdout).strip() or None
-        except (FileNotFoundError, subprocess.CalledProcessError):
+            return git_text(run_git(root, args).stdout).strip() or None
+        except subprocess.CalledProcessError as exc:
+            problems.append(f"git {' '.join(args)} failed: {git_stderr(exc) or exc}")
             return None
 
-    status: bytes = b""
+    # An unborn branch has no commit yet; that is a state, not a failure.
+    has_commit = run_git(root, ["rev-parse", "--verify", "-q", "HEAD"], check=False).returncode == 0
+    dirty: bool | None = None
+    entries: int | None = None
     try:
         status = run_git(root, ["status", "--porcelain=v1", "-z"]).stdout
-    except (FileNotFoundError, subprocess.CalledProcessError):
-        pass
+        dirty = bool(status)
+        entries = len([part for part in status.split(b"\0") if part])
+    except subprocess.CalledProcessError as exc:
+        problems.append(f"git status failed, so the working-tree state is unknown: {git_stderr(exc) or exc}")
 
-    return {
+    metadata = {
         "is_git_repository": True,
-        "commit": text(["rev-parse", "HEAD"]),
+        "commit": text(["rev-parse", "HEAD"]) if has_commit else None,
         "branch": text(["branch", "--show-current"]),
-        "dirty": bool(status),
-        "status_entry_count": len([part for part in status.split(b"\0") if part]),
+        "dirty": dirty,
+        "status_entry_count": entries,
     }
+    return metadata, problems
 
 
 def write_text(path: Path, text: str) -> None:
@@ -494,6 +548,24 @@ def load_ledger(out: Path) -> dict[str, Any]:
     return ledger
 
 
+def discard_previous_ledger(out: Path) -> None:
+    """Remove an earlier ledger first, so a failed create cannot leave it reporting complete coverage.
+
+    Only a directory that holds a ledger this helper wrote is touched: a file that merely
+    shares the name, for instance inside a target repository, is left alone.
+    """
+    previous = out / LEDGER_FILE
+    try:
+        ledger = json.loads(previous.read_text(encoding="utf-8", errors=PATH_ERRORS))
+    except (OSError, ValueError):
+        return
+    if not (isinstance(ledger, dict) and ledger.get("version") == LEDGER_VERSION and "repo_root" in ledger):
+        return
+    notice(f"note: replacing the existing ledger in {out}; its marks are discarded")
+    for name in (LEDGER_FILE, *LIST_FILES):
+        (out / name).unlink(missing_ok=True)
+
+
 def status_summary(ledger: dict[str, Any]) -> dict[str, Any]:
     files = ledger["files"]
     statuses = Counter(item["status"] for item in files)
@@ -527,8 +599,10 @@ def command_create(args: argparse.Namespace) -> int:
     if not requested.exists() or not requested.is_dir():
         raise SystemExit(f"repository directory does not exist: {requested}")
 
-    root, is_git = resolve_target(requested)
     out = Path(args.out).expanduser().resolve()
+    # Before anything that can fail: the old ledger must not outlive a failed inventory.
+    discard_previous_ledger(out)
+    root, is_git = resolve_target(requested)
     if is_within(out, root):
         raise SystemExit("--out must be outside the target repository to preserve read-only auditing")
 
@@ -537,7 +611,8 @@ def command_create(args: argparse.Namespace) -> int:
     extra: list[dict[str, Any]] = []
     if is_git:
         paths, warnings = git_paths(root)
-        metadata = git_metadata(root)
+        metadata, problems = git_metadata(root)
+        warnings += problems
     else:
         paths, pruned = non_git_paths(root)
         extra = [entry for entry in map(pruned_directory_entry, pruned) if entry]
@@ -597,16 +672,24 @@ def read_failure(root: Path, item: dict[str, Any]) -> str | None:
     return None
 
 
+# One mark on these stands for every file underneath, none of which is in the ledger.
+DIRECTORY_KINDS = {"pruned-directory", "submodule", "directory-entry"}
+
+
 def mark_problem(root: Path, item: dict[str, Any], status: str, note: str | None) -> str | None:
     """Return why this status cannot be recorded for this entry, or None when it can."""
-    if status == "excluded-confirmed" and not note:
+    has_note = bool(note and note.strip())
+    if status == "excluded-confirmed" and not has_note:
         return "excluded-confirmed needs --note with the file-specific reason"
     if status == "context-reviewed" and item["scope"] != "context":
         return f"context-reviewed applies to context entries only; this entry's scope is {item['scope']}"
-    if status == "reviewed" and item["status"] == "unreadable":
+    if status == "reviewed":
+        if item["kind"] in DIRECTORY_KINDS and not has_note:
+            return "reviewed on a directory entry needs --note naming what was read under it"
+        # Checked on every mark, whatever the entry's current status: what cannot be read now was not reviewed.
         failure = read_failure(root, item)
         if failure:
-            return f"still unreadable ({failure}); it cannot have been reviewed"
+            return f"cannot be read ({failure}), so it cannot have been reviewed"
     return None
 
 
@@ -715,6 +798,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 1
     except (KeyError, TypeError, AttributeError) as exc:
         notice(f"error: malformed ledger: {exc!r}")
+        return 1
+    except ValueError as exc:
+        notice(f"error: {exc}")
         return 1
 
 

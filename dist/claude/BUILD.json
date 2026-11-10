@@ -6,9 +6,9 @@
   "sha256": {
     "skills/address-review-feedback/LICENSE": "a37e0e9697144819e1d965176ac4ae5bc3fa02d11e7812036bbcadf6dafe2400",
     "skills/address-review-feedback/SKILL.md": "8e17c3586c99fa6aed011b243df6ce576a535c116f510e7f12f5b088055360ec",
-    "skills/audit-repository/SKILL.md": "f859c7deed0ef52d81911d2876f2d849c370070f75b69cbe612e9b95a95e91ce",
+    "skills/audit-repository/SKILL.md": "eb3e4009e4b3c10324a0d7e642f0ccce54ef3f2f7356c883abec403f1be4469a",
     "skills/audit-repository/assets/icon.svg": "8936b24f674a1250d999e2c2b5901374fb4240426f32bd1ae340c352a90d617d",
-    "skills/audit-repository/scripts/repo_inventory.py": "4f44fdce10fa58027435f7232a9bab0262f1476eb8d356dd1fe00212a37f467f",
+    "skills/audit-repository/scripts/repo_inventory.py": "472f50a041e1e2ff3e8df91aa2a355ddb9fd0301c597274a29144fde278a0c15",
     "skills/resolve-github-issue/SKILL.md": "a77929f170afad1cda85d198336a9d5bf4501a841919cc65b376ba4342b54cdf",
     "skills/resolve-github-issue/references/github-workflow.md": "fcb09bbf6364b28f541bfedf8bba1d68c58ef5c46118775808f742fd32b8febe",
     "skills/watch-pr-feedback/SKILL.md": "e568d19f3f5dfe12e4ba6a96058029f5587a53839bdc98e651ac681866029f9e",
