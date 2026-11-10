@@ -11,7 +11,7 @@
     "skills/audit-repository/agents/openai.yaml": "d869ef58b6b24baad297e4dde258fe88211a414146df2b3e08cf159da3337ce9",
     "skills/audit-repository/assets/icon.svg": "8936b24f674a1250d999e2c2b5901374fb4240426f32bd1ae340c352a90d617d",
     "skills/audit-repository/scripts/repo_inventory.py": "d8da28f01fd3198eafa0f1d9abdc6aaaa5d9cf62a0bf4436c54af53a3aadcb50",
-    "skills/resolve-github-issue/SKILL.md": "84fc5c26fcefb8f0f38c7449decb2d53b38c802e166fe30021b7b737e5e9aa49",
+    "skills/resolve-github-issue/SKILL.md": "a408b391739afe15b5c280c92d11468f03a0e534f99f37e2eeef91d4aec4d517",
     "skills/resolve-github-issue/agents/openai.yaml": "8cf2450cde5dd9b9696b4161ae5800a13ad962baa01c0cb0eb2041f95501c0a1",
     "skills/resolve-github-issue/references/auto-fix.md": "21881697622fa56790d78259cd810fd0e729c04da9255a396ed823e551d0d941",
     "skills/resolve-github-issue/references/github-workflow.md": "a26fa99fa06654009ff1df730e0efc1a2f3e8a44730ccf798c7e3281f82db6c2",
