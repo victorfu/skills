@@ -1,6 +1,6 @@
 ---
 name: address-review-feedback
-description: Only when the user explicitly invokes address-review-feedback, evaluate code review feedback against the current code, requirements and supported platforms then apply justified fixes, including failing CI checks on the PR head, update the existing PR and reply to review comments by default. Handle GitHub PR threads, pasted review comments, failing CI and feedback from people or agents. Honor explicit requests for verification only, reply drafts only or other limits.
+description: Verify review feedback and failing CI against the current code, apply justified fixes, update the existing PR and reply to reviewers. Honors limits such as verification only or reply drafts only.
 ---
 
 # address-review-feedback
