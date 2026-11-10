@@ -18,7 +18,7 @@ Development workflow skills for [Claude Code](https://code.claude.com) and [Code
 - For GitHub workflows, GitHub access: a signed-in [GitHub CLI](https://cli.github.com) (`gh auth login`), or a GitHub connector available in your client
 - For workflows that open or update PRs, push access to the repo you want to open a PR against; if you don't have it, use your own fork
 
-No extra API keys are required. `watch-pr-feedback` also needs `gh` and Python 3 (standard library only) for its polling script; `audit-repository` uses Python 3.10+ (standard library only) for its coverage ledger, with manual Git-based accounting as a fallback. Auditing a local repository needs no GitHub login or push permission.
+No extra API keys are required. `watch-pr-feedback` also needs `gh` and Python 3 (standard library only) for its polling script; `audit-repository` uses Python 3.10+ (standard library only) for its coverage ledger, with manual Git-based accounting as a fallback. The ledger helper refuses to build an inventory when Git cannot inspect the repository or a directory cannot be listed, so a partial listing is never reported as complete coverage. Auditing a local repository needs no GitHub login or push permission.
 
 ## Installation
 

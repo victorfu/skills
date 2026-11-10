@@ -1,6 +1,6 @@
 ---
 name: audit-repository
-description: Only when the user explicitly invokes audit-repository, audit the current repository, a local repository path, or a provided Git repository URL for real correctness bugs, crashes, data corruption, security-impacting logic flaws, and version-specific incompatibilities. Use when the user asks to debug, find bugs or logic holes, investigate a failure, scan an entire repo, or review code for defects (including「找 bug」「邏輯漏洞」「掃描全部程式碼」). Perform an evidence-based, read-only, exhaustive first-party code audit with explicit coverage accounting and discussion before fixes. Do not use for style-only review, general refactoring, speculative hardening, or direct code modification.
+description: Audit a whole repository for verified, behavior-affecting bugs and report them with a coverage ledger. Read-only; findings are discussed before any fix. Honors an explicitly narrower scope.
 ---
 
 # Audit Repository
@@ -128,11 +128,16 @@ The helper writes:
 
 - `ledger.json`: authoritative inventory and review status;
 - `review-list.txt`: first-party text files requiring full review;
-- `decision-list.txt`: generated, vendored, symlinked, or submodule entries requiring an explicit include/exclude decision;
+- `decision-list.txt`: entries requiring an explicit include/exclude decision: generated, vendored, symlinked, submodule or directory entries, text in an unexpected encoding, and directories skipped in non-Git mode;
+- `unreadable-list.txt`: entries that could not be read and block completion;
 - `context-list.txt`: documentation and lockfiles used as supporting context;
 - `excluded-list.txt`: binary or special files recorded but not line-reviewed.
 
-If Python or the helper cannot run, reproduce the same accounting with `git ls-files --cached --others --exclude-standard` and maintain an equivalent explicit ledger. State that fallback in the report.
+`create` prints the repository root it resolved and the inventory mode (git, or a non-Git directory walk) on stderr. Confirm the root is the intended target before reviewing. When `--repo` is a subdirectory of a repository, the root is that repository; when it is a directory the enclosing repository ignores, the directory is inventoried by itself in non-Git mode.
+
+`create` exits 1 without writing a ledger when Git cannot inspect the target (git missing from PATH, a "dubious ownership" refusal, a damaged repository, a bare repository) or when a directory cannot be listed. Resolve the cause and run it again; an inventory built around the failure would be missing files.
+
+If Python or the helper cannot run, reproduce the same accounting with `git ls-files -z --cached --others --exclude-standard` and maintain an equivalent explicit ledger. State that fallback in the report.
 
 ### 3. Resolve every scope decision
 
@@ -141,6 +146,8 @@ For each entry in `decision-list.txt`, determine whether it is authoritative fir
 - **Generated or built output:** inspect manifests and package/export/deployment configuration. Review it if it is shipped, executed, hand-modified, has no source equivalent, or can diverge from source. Exclude it only after identifying its source of truth and confirming the generated copy is not the appropriate review target.
 - **Vendored code:** exclude third-party code only when provenance is clear and local modifications are absent or irrelevant. Review local patches, forks, adapters, or authoritative vendored runtime code.
 - **Symlink:** inspect the link target without following outside the repository automatically. Include an in-repository authoritative target; disclose an external target.
+- **Encoded text** (`encoded-text`, `binary-or-encoded-text`): the file has a UTF-16/UTF-32 BOM, or NUL bytes under a text extension. Decode it and review it as source; exclude it only when it is confirmed to be binary data.
+- **Skipped directory** (`pruned-directory`, non-Git mode only): the helper did not list files under dependency or build-output directories such as `vendor/` or `build/`. Inspect the directory. Exclude it when it is third-party or reproducible output; otherwise review its files by hand and mark the directory entry `reviewed`, naming what was read in `--note`.
 - **Submodule:** record the pinned commit and role. Do not fetch or execute it automatically. Include it only when the user’s requested scope clearly treats it as first-party and access is safe.
 
 Mark each exact decision only after it is resolved:
@@ -153,7 +160,9 @@ python3 "$SKILL_DIR/scripts/repo_inventory.py" mark \
   --note "Generated from src/... and not shipped directly"
 ```
 
-Use `reviewed` instead of `excluded-confirmed` when the file was fully reviewed. Never mark the whole `decision-list.txt` excluded without file-specific confirmation.
+Use `reviewed` instead of `excluded-confirmed` when the file was fully reviewed. `excluded-confirmed` requires `--note` with the file-specific reason, and the helper rejects it without one. Never mark the whole `decision-list.txt` excluded without file-specific confirmation.
+
+The other statuses: `context-reviewed` records that a context entry (documentation, a lockfile) was inspected and is accepted for context entries only; `unreadable` records that an entry could not be read. An unreadable entry cannot be marked `reviewed` while it still cannot be read.
 
 ### 4. Build a code and data-flow map
 
@@ -199,7 +208,7 @@ python3 "$SKILL_DIR/scripts/repo_inventory.py" mark \
   --path "src/example.py"
 ```
 
-For many completed files, pass an exact newline-delimited temporary list through `--paths-file` or `--stdin`. Add only files actually read in full.
+For many completed files, pass an exact newline-delimited UTF-8 list through `--paths-file` or `--stdin`. Add only files actually read in full. A rejected `mark` (exit 2: an unknown path, or a status the entry cannot take) changes nothing; fix the batch and run it again.
 
 When subagents are available and the repository is large, partition the ledger into non-overlapping path sets. Require each subagent to return reviewed paths, candidate evidence, and unresolved dependencies. The primary agent must independently double-check every reported finding and merge coverage without gaps or duplicate claims.
 
@@ -260,9 +269,9 @@ python3 "$SKILL_DIR/scripts/repo_inventory.py" status \
   --show-pending
 ```
 
-Exit code `0` means every review or decision entry has a completed disposition. Exit code `2` means coverage is incomplete. Continue reviewing while pending entries remain.
+Exit code `0` means every entry has a completed disposition. Exit code `2` means coverage is incomplete: an entry is still pending, undecided or unreadable, an entry has a status the helper does not know, or the inventory is empty. Continue reviewing while such entries remain.
 
-The ledger tracks dispositions, not proof of reading. Inspect relevant context files; promote executable documentation (such as agent skills or runnable examples) to full review when it is authoritative behavior. For non-Git directories, disclose and resolve `non_git_pruned_directories` before claiming complete coverage; a successful status exit alone does not cover those directories.
+The ledger tracks dispositions, not proof of reading. Inspect relevant context files; promote executable documentation (such as agent skills or runnable examples) to full review when it is authoritative behavior. The summary's `review_scope` counts review-required files that were excluded instead of reviewed; report that number, and the reason for each, under Coverage. The ledger is a snapshot taken by `create`: files added or changed afterwards are not in it.
 
 Do not claim exhaustive review when:
 
@@ -306,7 +315,7 @@ Lead with findings, sorted by severity and then confidence. Do not bury confirme
 - **Ref:** <branch/tag and exact commit>
 - **Working tree:** clean | dirty; <relevant note>
 - **Inventory:** <total entries>
-- **Review-required files:** <reviewed>/<total>
+- **Review-required files:** <reviewed>/<total>; <excluded with reason, if any>
 - **Decision entries:** <resolved>/<total>
 - **Context inspected:** <important docs/manifests/lockfile evidence>
 - **Automatically excluded:** <binary/special count and categories>
