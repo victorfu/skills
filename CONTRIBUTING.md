@@ -93,10 +93,10 @@ Before testing against real issues, use read-only mode ("assess only, don't chan
 1. Update `version` in `release.json` (SemVer, for example `0.1.1`). Claude Code only updates an installed plugin when the version number changes, so bump it on every release.
 2. Run the build and tests, and confirm `--check` passes.
 3. Commit all changes (including `dist/` and both marketplaces), push, and wait for CI to pass.
-4. Create a tag on that commit and push it:
+4. Create an annotated tag on that commit (if the release went through a PR, the merge commit on `master`) and push it. The tag message is `displayName` from `release.json` followed by the version:
 
    ```sh
-   git tag -a v0.1.1 -m "victorfu-skills 0.1.1"
+   git tag -a v0.1.1 -m "DevFlow 0.1.1"
    git push origin v0.1.1
    ```
 
