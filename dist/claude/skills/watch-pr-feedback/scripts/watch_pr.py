@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 """Wait for new review feedback or CI results on a GitHub pull request.
 
-Polls with the authenticated gh CLI and prints exactly one JSON event, then exits:
+Queries with authenticated gh and prints exactly one JSON event, then exits.
+Default poll mode sleeps between queries. Opt-in hybrid mode also wakes on local
+webhook signals, reconciles periodically and requires --ack for delivered batches.
 
-  baseline  First run for this state file: existing feedback was recorded as seen.
+  baseline  First run: inspect existing feedback (hybrid requires acknowledgment).
   feedback  New review comments, reviews or PR conversation comments appeared.
   ci_failed CI finished on the current head SHA with failing checks (reported once per SHA).
   quiet     No new feedback for --quiet seconds since the last head change or event,
-            and no CI check on the current head is pending or failing.
+            and no CI check on the current head is pending; reports the CI status.
   closed    The PR is no longer open.
   waiting   --max-wait elapsed first; run again with the same state file to continue.
 
@@ -15,6 +17,7 @@ Exit status is 0 for every event and 1 for errors (message on stderr).
 Uses only the Python standard library; runs on Windows, macOS and Linux.
 """
 import argparse
+from contextlib import contextmanager
 import json
 import os
 from pathlib import Path
@@ -26,6 +29,36 @@ import time
 
 PR_URL = re.compile(r'https://([^/\s]+)/([^/\s]+)/([^/\s]+)/pull/(\d+)/?(?:[?#].*)?$')
 EXCERPT = 300
+
+
+@contextmanager
+def state_lock(path):
+    """Nonblocking OS lock; the file may remain, but ownership cannot survive a crash."""
+    lock_path = Path(str(path) + '.lock')
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    with lock_path.open('a+b') as handle:
+        handle.seek(0, 2)
+        if handle.tell() == 0:
+            handle.write(b'0')
+            handle.flush()
+        handle.seek(0)
+        try:
+            if os.name == 'nt':
+                import msvcrt
+                msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+            else:
+                import fcntl
+                fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError as error:
+            raise ValueError(f'Another watcher owns {path}') from error
+        try:
+            yield
+        finally:
+            handle.seek(0)
+            if os.name == 'nt':
+                msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+            else:
+                fcntl.flock(handle, fcntl.LOCK_UN)
 
 
 class GhError(Exception):
@@ -59,7 +92,7 @@ def parse_target(args):
     return args.host, args.repo, int(args.pr.lstrip('#'))
 
 
-def fetch_feedback(host, repo, number, ignored):
+def fetch_feedback(host, repo, number, ignored, full=False):
     items = []
     base = f'repos/{repo}'
     for c in gh_lines(f'{base}/pulls/{number}/comments?per_page=100',
@@ -77,7 +110,8 @@ def fetch_feedback(host, repo, number, ignored):
     for item in items:
         if (item.get('user') or '').lower() in ignored:
             continue
-        item['body'] = excerpt(item.get('body'))
+        if not full:
+            item['body'] = excerpt(item.get('body'))
         kept.append(item)
     return kept
 
@@ -143,7 +177,20 @@ def main():
     parser.add_argument('--max-wait', type=int, default=540, help='seconds before this run returns "waiting" (default 540)')
     parser.add_argument('--ignore-author', action='append', default=[], help='login whose comments are ignored; repeatable')
     parser.add_argument('--include-self', action='store_true', help='do not ignore comments by the authenticated gh user')
+    parser.add_argument('--mode', choices=('poll', 'hybrid'), default='poll')
+    parser.add_argument('--signal', help='receiver heartbeat/wakeup file (hybrid)')
+    parser.add_argument('--reconcile', type=int, default=300, help='hybrid full refresh interval')
+    parser.add_argument('--ack', help='acknowledge a completed hybrid batch, then continue watching')
     args = parser.parse_args()
+    if args.mode == 'hybrid':
+        if not args.signal or args.reconcile < 1:
+            parser.error('hybrid requires --signal and positive --reconcile')
+        from hybrid_watch import run
+        with state_lock(Path(args.state)):
+            run(args)
+        return
+    if args.ack:
+        parser.error('--ack requires --mode hybrid')
     for name in ('interval', 'quiet', 'settle', 'max_wait'):
         if getattr(args, name) < (1 if name == 'interval' else 0):
             raise ValueError(f'--{name.replace("_", "-")} is out of range')
@@ -151,6 +198,8 @@ def main():
     host, repo, number = parse_target(args)
     state_path = Path(args.state)
     state = load_state(state_path)
+    if state and state.get('mode') == 'hybrid':
+        raise ValueError('Hybrid state requires --mode hybrid and --signal')
     ignored = {login.lower() for login in args.ignore_author}
     if not args.include_self:
         ignored.add(gh('api', '--hostname', host, 'user', '--jq', '.login').strip().lower())
@@ -218,6 +267,8 @@ def main():
 
 
 if __name__ == '__main__':
+    # Companion modules must share this module's exception class and configuration.
+    sys.modules['watch_pr'] = sys.modules[__name__]
     try:
         main()
     except (GhError, ValueError, OSError, KeyError, json.JSONDecodeError) as error:

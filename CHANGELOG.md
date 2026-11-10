@@ -2,6 +2,10 @@
 
 Behavior changes to the skills and the plugin package, newest first. These skills commit, push and post on your behalf, so read the entries between your installed version and the new one before updating. Docs-only and CI-only changes are left out.
 
+## Unreleased
+
+- `watch-pr-feedback` adds opt-in hybrid mode: local `gh webhook forward` wakeups, 5-minute reconciliation, polling fallback, durable acknowledged batches and restart recovery. Poll remains the default.
+
 ## 0.7.0 (2026-11-10)
 
 - **Default changed:** replies that `address-review-feedback` (and `watch-pr-feedback` through it) publishes now end with a one-line note that an AI agent wrote them on your behalf. Ask for it to be left out to get the old behavior.

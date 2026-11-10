@@ -19,14 +19,17 @@ Watch one PR and run address-review-feedback for each new batch of review feedba
 1. Resolve and verify the PR: host, owner/repo, number, state, head repo/branch and head SHA. Stop if it is closed or merged. Confirm that the local checkout (or a dedicated worktree) tracks the PR head branch and has no unrelated uncommitted work; address-review-feedback rules for preserving work apply.
 2. Load the address-review-feedback workflow from the same plugin: it is the sibling skill directory, `../address-review-feedback/SKILL.md` relative to this file. It is restricted to explicit invocation, so read that file and follow it rather than relying on the client to auto-load it. If it is not installed, stop and tell the user.
 3. Settle the parameters, using the user's values when given:
-   - poll interval: 60 seconds
+   - mode: `poll` (default, unchanged); use `hybrid` when requested, with webhook wakeups and 5-minute reconciliation
+   - poll interval: 60 seconds (also the hybrid fallback when the receiver is unavailable)
    - quiet window: 10 minutes with no new feedback after the last push or handled event, with no CI pending
    - settle time: 60 seconds after new feedback, so one review's comments are handled together
    - maximum: 10 address rounds or 4 hours of watching, whichever comes first
    - authors to ignore (for example noisy bots), in addition to the authenticated gh user
 4. Choose a state file outside the repo (the client's scratch/temp directory) named after the PR, and keep using the same path for the whole watch.
 
-## 2. Poll with the helper script
+## 2. Wait with the helper script
+
+For hybrid mode, read [references/hybrid.md](references/hybrid.md) first. It describes the local `gh webhook forward` receiver, separate state files, acknowledged batches, fallback and shutdown. The same address-round and stop rules below apply to both modes. Keep poll as the default; do not silently provision a webhook or install an extension for a poll watch.
 
 Use [scripts/watch_pr.py](scripts/watch_pr.py) (Python 3 standard library plus gh). It polls the PR's review comments, reviews with a body or a changes-requested verdict, PR conversation comments and `gh pr checks` for the current head, then prints one JSON event and exits:
 
@@ -55,7 +58,7 @@ If the script fails (exit 1), read its stderr. Retry transient network or rate-l
 1. Before editing, fetch and confirm the local branch matches the PR head; if someone else pushed, update to it without discarding local work.
 2. Follow address-review-feedback in full for this round, passing the new items (IDs, URLs, authors, excerpts) and any failing checks as the feedback to address. Its verification, scope, conflict/build checks, delivery and reply rules apply unchanged. The excerpts in the event are truncated; read the full comments and threads.
 3. Record per round: event, items handled with their verdicts, commit SHA pushed (if any), replies posted, and CI status for the delivered head.
-4. Then poll again with the same state file.
+4. Then wait again with the same state file. In hybrid mode, acknowledge the completed `batch_id` using the reference's command. After a crash, verify which commits and replies actually completed before finishing and acknowledging a replayed batch; never blindly repeat remote actions.
 
 ## 4. Stop conditions and final report
 
@@ -69,3 +72,5 @@ Stop when any of these happens:
 - The user interrupts or asks to stop.
 
 Final reply: why the watch ended; the number of rounds; per round, what was fixed, rejected, already fixed or blocked, with commits and replies actually published; the final head SHA with its CI status (passing, failing with reasons, pending or none) and mergeability; and any items still needing the user. Do not claim the PR is ready to merge; that is the reviewers' and user's decision.
+
+For hybrid mode, stop the receiver as described in the reference on every exit, including errors and user interruptions.
