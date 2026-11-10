@@ -137,7 +137,7 @@ The helper writes:
 
 `create` exits 1 without writing a ledger when Git cannot inspect the target (git missing from PATH, a "dubious ownership" refusal, a damaged repository, a bare repository) or when a directory cannot be listed. Resolve the cause and run it again; an inventory built around the failure would be missing files.
 
-`create` replaces any ledger already in `AUDIT_DIR`, discarding its marks, and removes it even when the new inventory fails. Use a fresh `AUDIT_DIR` for each audit, and run `create` once.
+`create` replaces any ledger already in `AUDIT_DIR`, discarding its marks, and removes it even when the new inventory fails, including a missing target or a file passed as `--repo`. This cleanup happens only after establishing that the output is outside the target: an output inside the target, or inside a possible enclosing Git repository when target resolution fails, is left untouched. Use a fresh `AUDIT_DIR` for each audit, and run `create` once.
 
 If Python or the helper cannot run, reproduce the same accounting with `git ls-files -z --cached --others --exclude-standard` and maintain an equivalent explicit ledger. Treat any warning Git prints while listing as an incomplete inventory. This fallback covers Git repositories only; for a plain directory, list every file yourself. State the fallback in the report.
 
@@ -274,7 +274,7 @@ python3 "$SKILL_DIR/scripts/repo_inventory.py" status \
 
 Exit code `0` means every entry has a completed disposition. Exit code `2` means coverage is incomplete: an entry is still pending, undecided or unreadable, an entry has a status the helper does not know, or the inventory is empty. Continue reviewing while such entries remain. Exit code `1` means the ledger is missing or malformed; a command-line usage error also exits `2`, with a usage message instead of a summary.
 
-The ledger tracks dispositions, not proof of reading. Inspect relevant context files; promote executable documentation (such as agent skills or runnable examples) to full review when it is authoritative behavior. The summary's `review_scope` counts review-required files that were excluded instead of reviewed; report that number, and the reason for each, under Coverage. The ledger is a snapshot taken by `create`: files added or changed afterwards are not in it.
+The ledger tracks dispositions, not proof of reading. MDX files are source requiring review because they can contain executable JavaScript and JSX. Inspect relevant context files; promote executable documentation (such as agent skills or runnable examples) to full review when it is authoritative behavior. The summary's `review_scope` counts review-required files that were excluded instead of reviewed; report that number, and the reason for each, under Coverage. The ledger is a snapshot taken by `create`: files added or changed afterwards are not in it.
 
 Do not claim exhaustive review when:
 

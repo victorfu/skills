@@ -36,7 +36,7 @@ SOURCE_EXTENSIONS = {
     ".fs", ".fsx", ".go", ".gql", ".graphql", ".groovy", ".h", ".hcl",
     ".hh", ".hpp", ".hrl", ".html", ".htm", ".ini", ".java", ".jl",
     ".js", ".jsx", ".json", ".json5", ".kt", ".kts", ".less", ".lua",
-    ".m", ".mm", ".mjs", ".mts", ".nix", ".php", ".pl", ".pm", ".proto",
+    ".m", ".mdx", ".mm", ".mjs", ".mts", ".nix", ".php", ".pl", ".pm", ".proto",
     ".ps1", ".py", ".pyi", ".r", ".rb", ".rs", ".sass", ".scala", ".sc",
     ".scss", ".sh", ".sol", ".sql", ".svelte", ".swift", ".tf", ".tfvars",
     ".thrift", ".toml", ".ts", ".tsx", ".vue", ".xml", ".xsl", ".xslt",
@@ -44,7 +44,7 @@ SOURCE_EXTENSIONS = {
 }
 
 CONTEXT_EXTENSIONS = {
-    ".adoc", ".md", ".mdx", ".rst",
+    ".adoc", ".md", ".rst",
 }
 
 BINARY_EXTENSIONS = {
@@ -552,7 +552,8 @@ def discard_previous_ledger(out: Path) -> None:
     """Remove an earlier ledger first, so a failed create cannot leave it reporting complete coverage.
 
     Only a directory that holds a ledger this helper wrote is touched: a file that merely
-    shares the name, for instance inside a target repository, is left alone.
+    shares the name is left alone. The caller must first establish that out is
+    outside the target repository.
     """
     previous = out / LEDGER_FILE
     try:
@@ -596,15 +597,21 @@ def status_summary(ledger: dict[str, Any]) -> dict[str, Any]:
 
 def command_create(args: argparse.Namespace) -> int:
     requested = Path(args.repo).expanduser().resolve()
-    if not requested.exists() or not requested.is_dir():
-        raise SystemExit(f"repository directory does not exist: {requested}")
-
     out = Path(args.out).expanduser().resolve()
-    # Before anything that can fail: the old ledger must not outlive a failed inventory.
-    discard_previous_ledger(out)
-    root, is_git = resolve_target(requested)
+    try:
+        if not requested.exists() or not requested.is_dir():
+            raise SystemExit(f"repository directory does not exist: {requested}")
+        root, is_git = resolve_target(requested)
+    except (OSError, subprocess.CalledProcessError, SystemExit):
+        # Git may fail before revealing the root. Protect the requested path and
+        # enclosing Git repositories before invalidating state for a failed attempt.
+        protected = [requested, *(parent for parent in requested.parents if (parent / ".git").exists())]
+        if not any(is_within(out, boundary) for boundary in protected):
+            discard_previous_ledger(out)
+        raise
     if is_within(out, root):
         raise SystemExit("--out must be outside the target repository to preserve read-only auditing")
+    discard_previous_ledger(out)
 
     warnings: list[str] = []
     pruned: list[dict[str, str]] = []

@@ -112,6 +112,53 @@ class InventoryTests(unittest.TestCase):
         self.assertIn('outside the target repository', result.stderr)
         self.assertFalse(output.exists())
 
+    def test_refused_output_preserves_existing_ledger(self):
+        source = self.plain_directory({'app.py': b'print(1)\n'})
+        output = self.repo / 'audit'
+        nested = self.repo / 'pkg'
+        nested.mkdir()
+        # Cover widening to a plain parent and resolving a Git subdirectory to its root.
+        for target in (self.base, self.repo, nested):
+            with self.subTest(target=target):
+                self.run_helper('create', '--repo', str(source), '--out', str(output))
+                before = {p.name: p.read_bytes() for p in output.iterdir()}
+                result = self.run_helper('create', '--repo', str(target), '--out', str(output), expected=1)
+                self.assertIn('outside the target repository', result.stderr)
+                self.assertEqual(before, {p.name: p.read_bytes() for p in output.iterdir()})
+
+    def test_failed_target_validation_preserves_ledger_inside_enclosing_repo(self):
+        source = self.plain_directory({'app.py': b'print(1)\n'})
+        output = self.repo / 'audit'
+        nested = self.repo / 'pkg'
+        nested.mkdir()
+        empty = self.base / 'empty-path'
+        empty.mkdir()
+        for target, env in ((self.repo / 'missing', None), (self.repo / 'tracked.py', None),
+                            (nested, {'PATH': str(empty)})):
+            with self.subTest(target=target):
+                self.run_helper('create', '--repo', str(source), '--out', str(output))
+                before = {p.name: p.read_bytes() for p in output.iterdir()}
+                self.run_helper('create', '--repo', str(target), '--out', str(output), expected=1, env=env)
+                self.assertEqual(before, {p.name: p.read_bytes() for p in output.iterdir()})
+
+    def test_mdx_is_reviewed_before_coverage_can_complete(self):
+        content = b'export const total = (price, count) => price * count\n\n# Cart\n\n{total(10, 2)}\n'
+        (self.repo / 'page.mdx').write_bytes(content)
+        source = self.plain_directory({'page.mdx': content, 'README.md': b'Project documentation\n'})
+        for target in (self.repo, source):
+            with self.subTest(target=target):
+                records = self.records(repo=target)
+                self.assertEqual(records['README.md']['scope'], 'context')
+                for item in records.values():
+                    if item['path'] != 'page.mdx' and item['status'].startswith('pending'):
+                        self.mark('reviewed', item['path'])
+                result = self.run_helper('status', '--out', str(self.out), '--show-pending', expected=2)
+                self.assertIn('page.mdx', result.stdout)
+                self.assertEqual((records['page.mdx']['scope'], records['page.mdx']['status']),
+                                 ('review', 'pending'))
+                self.mark('reviewed', 'page.mdx')
+                self.run_helper('status', '--out', str(self.out))
+
     def test_unicode_bom_source_requires_review_decision(self):
         for encoding, bom in (
             ('utf-16-le', b'\xff\xfe'), ('utf-16-be', b'\xfe\xff'),
@@ -377,6 +424,21 @@ class InventoryTests(unittest.TestCase):
         result = self.run_helper('status', '--out', str(self.out), expected=1)
         self.assertIn('ledger not found', result.stderr)
         self.assertEqual([p.name for p in self.out.iterdir()], [])
+
+    def test_invalid_target_discards_earlier_completed_ledger(self):
+        file_target = self.base / 'not-a-directory'
+        file_target.write_bytes(b'not a repository\n')
+        for target in (self.base / 'missing', file_target):
+            with self.subTest(target=target):
+                for item in self.create()['files']:
+                    if item['status'].startswith('pending'):
+                        self.mark('reviewed', item['path'])
+                self.run_helper('status', '--out', str(self.out))
+                result = self.run_helper('create', '--repo', str(target), '--out', str(self.out), expected=1)
+                self.assertIn('repository directory does not exist', result.stderr)
+                result = self.run_helper('status', '--out', str(self.out), expected=1)
+                self.assertIn('ledger not found', result.stderr)
+                self.assertEqual([p.name for p in self.out.iterdir()], [])
 
     def test_rerunning_create_discards_marks_and_says_so(self):
         self.create()
