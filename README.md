@@ -9,15 +9,16 @@ Development workflow skills for [Claude Code](https://code.claude.com) and [Code
 | `resolve-github-issue` | Give it a GitHub issue: it first verifies the problem is real, then fixes, tests, and reviews it, and finally opens a PR. |
 | `address-review-feedback` | Verify review feedback and failing CI against current code before applying justified fixes; explain rejected, already-fixed and blocked concerns. |
 | `watch-pr-feedback` | Watch a PR with `gh` and run `address-review-feedback` on each new batch of review comments or failing CI, until no new feedback arrives. |
+| `audit-repository` | Audit a complete repository for verified bugs, with a coverage ledger and discussion before any fixes. |
 
 ## Requirements
 
 - Claude Code or Codex (CLI or desktop)
 - `git`
-- GitHub access: a signed-in [GitHub CLI](https://cli.github.com) (`gh auth login`), or a GitHub connector available in your client
-- Push access to the repo you want to open a PR against; if you don't have it, use your own fork
+- For GitHub workflows, GitHub access: a signed-in [GitHub CLI](https://cli.github.com) (`gh auth login`), or a GitHub connector available in your client
+- For workflows that open or update PRs, push access to the repo you want to open a PR against; if you don't have it, use your own fork
 
-No extra API keys are required. `watch-pr-feedback` also needs `gh` and Python 3 (standard library only) for its polling script; the other skills need no Python.
+No extra API keys are required. `watch-pr-feedback` also needs `gh` and Python 3 (standard library only) for its polling script; `audit-repository` uses Python 3.10+ (standard library only) for its coverage ledger, with manual Git-based accounting as a fallback. The ledger helper refuses to build an inventory when Git cannot inspect the repository or a directory cannot be listed, so a partial listing is never reported as complete coverage. Auditing a local repository needs no GitHub login or push permission.
 
 ## Installation
 
@@ -69,7 +70,7 @@ Official sources: [Claude CLI setup](https://code.claude.com/docs/en/setup), [Cl
 
 ## Usage
 
-In Codex, select **DevFlow** with `@`, then choose **Resolve GitHub Issue** or **Address Review Feedback**. In Claude Code, the plugin list shows **devflow**.
+In Codex, select **DevFlow** with `@`, then choose **Resolve GitHub Issue**, **Address Review Feedback**, **Watch PR Feedback**, or **Audit Repository**. In Claude Code, the plugin list shows **devflow**.
 
 The skill runs only when you invoke it explicitly; pasting an issue URL on its own does not trigger it.
 
@@ -134,6 +135,22 @@ $devflow:watch-pr-feedback https://github.com/OWNER/REPO/pull/123 Poll every 2 m
 ```
 
 Comments from your own `gh` account are ignored by default, so the replies it posts do not trigger new rounds. Limits you give apply to every round. It never merges, force-pushes or re-runs CI. The packaged polling script was tested against a real merged PR and with mocked events; a full live watch remains unverified.
+
+### Audit a repository before fixing bugs
+
+Explicitly invoke `audit-repository` with a local path, a Git repository URL, or no target to use the current repository:
+
+```text
+/devflow:audit-repository /path/to/repository
+$devflow:audit-repository https://github.com/OWNER/REPO
+$devflow:audit-repository
+```
+
+It inventories tracked and untracked, non-ignored files, reviews the full first-party scope, and double-checks each candidate against callers, contracts and supported versions. The report separates confirmed bugs from potential issues and states coverage and verification limits. Reports default to Traditional Chinese unless another language is requested.
+
+This skill is read-only: it does not fix code, create branches, commit, push, open issues or PRs, or automatically start another skill. Audit metadata and reproductions stay outside the target repository. A later explicit request is needed to implement fixes. Failure evidence is investigated first, but the full audit continues unless you explicitly narrow the scope.
+
+The helper and both packages are tested locally; complete model-driven audits in both clients have not yet been validated. Installing this plugin does not replace an existing standalone `repo-debugger`; use the qualified invocation above to select this skill.
 
 ## Updating
 
