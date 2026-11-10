@@ -9,15 +9,16 @@
 | `resolve-github-issue` | 給它一個 GitHub issue，它會先驗證問題是否成立，再修正、測試、審查，最後開 PR。 |
 | `address-review-feedback` | 先對照目前程式碼驗證 review 意見與失敗的 CI，再處理成立的修改；說明不成立、已修正及待釐清的項目。 |
 | `watch-pr-feedback` | 用 `gh` 監看 PR，每有新的 review comments 或 CI 失敗就執行 `address-review-feedback`，直到不再有新意見。 |
+| `audit-repository` | 完整審查 repository，雙重驗證 Bug 並記錄覆蓋率，先討論再修正。 |
 
 ## 需求
 
 - Claude Code 或 Codex（CLI 或 desktop 皆可）
 - `git`
-- GitHub 存取：已登入的 [GitHub CLI](https://cli.github.com)（`gh auth login`），或客戶端內可用的 GitHub connector
-- 要開 PR 的 repo 需有 push 權限；沒有的話，使用你自己的 fork
+- GitHub 工作流程需要 GitHub 存取：已登入的 [GitHub CLI](https://cli.github.com)（`gh auth login`），或客戶端內可用的 GitHub connector
+- 要開啟或更新 PR 的 repo 需有 push 權限；沒有的話，使用你自己的 fork
 
-不需要額外的 API key。`watch-pr-feedback` 另需 `gh` 與 Python 3（只用標準函式庫）執行輪詢腳本；其他 skill 不需要 Python。
+不需要額外的 API key。`watch-pr-feedback` 另需 `gh` 與 Python 3（只用標準函式庫）執行輪詢腳本；`audit-repository` 的覆蓋率腳本使用 Python 3.10 以上版本（只用標準函式庫），沒有 Python 時可改用 Git 手動記錄。Git 無法檢查該 repository 或有目錄無法列出時，這個腳本會直接失敗而不建立清單，避免把不完整的清單回報成覆蓋完成。審查本機 repository 不需要 GitHub 登入或 push 權限。
 
 ## 安裝
 
@@ -69,7 +70,7 @@ codex plugin marketplace add victorfu/skills --ref v0.1.0
 
 ## 使用
 
-Codex 的 `@` 選單選取 **DevFlow**，再選 **Resolve GitHub Issue** 或 **Address Review Feedback**。Claude Code 的 plugin 清單顯示 **devflow**。
+Codex 的 `@` 選單選取 **DevFlow**，再選 **Resolve GitHub Issue**、**Address Review Feedback**、**Watch PR Feedback** 或 **Audit Repository**。Claude Code 的 plugin 清單顯示 **devflow**。
 
 Skill 只會在你明確叫用時執行；單純貼上 issue 網址不會觸發。
 
@@ -134,6 +135,22 @@ $devflow:watch-pr-feedback https://github.com/OWNER/REPO/pull/123 每 2 分鐘�
 ```
 
 預設忽略你自己 `gh` 帳號的留言，避免它發出的回覆再觸發新一輪。你指定的限制會套用到每一輪。它不會 merge、force push 或重新執行 CI。輪詢腳本已對實際已合併的 PR 及模擬事件測試；完整的實際監看流程尚未驗證。
+
+### 完整審查 repository，先討論再修正
+
+明確叫用 `audit-repository`，可提供本機路徑、Git repository URL，或省略目標以使用目前 repository：
+
+```text
+/devflow:audit-repository /path/to/repository
+$devflow:audit-repository https://github.com/OWNER/REPO
+$devflow:audit-repository
+```
+
+它會盤點 tracked 與未被忽略的 untracked 檔案、完整審查第一方範圍，再對照呼叫端、行為契約與支援版本雙重驗證每個候選問題。報告區分 Confirmed Bugs 與 Potential Issues，並列出覆蓋率和驗證限制；預設使用繁體中文，可指定其他語言。
+
+此 skill 僅進行唯讀審查，不會修正程式碼、建立分支、commit、push、開 issue 或 PR，也不會自動啟動其他 skill。審查記錄與重現資料放在目標 repo 外；實作修正需要後續明確要求。若提供錯誤資訊，會優先調查該路徑，再繼續完整審查，除非你明確縮小範圍。
+
+Helper 與兩套打包產物已於本機測試；兩個客戶端中由模型執行完整審查的流程尚未驗證。安裝 plugin 不會取代既有 standalone `repo-debugger`，請使用上方帶 namespace 的名稱選取此 skill。
 
 ## 更新
 

@@ -15,6 +15,7 @@ body:
         - resolve-github-issue
         - address-review-feedback
         - watch-pr-feedback
+        - audit-repository
         - packaging / installation
     validations:
       required: true
