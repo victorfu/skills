@@ -18,7 +18,7 @@
 - GitHub 工作流程需要 GitHub 存取：已登入的 [GitHub CLI](https://cli.github.com)（`gh auth login`），或客戶端內可用的 GitHub connector
 - 要開啟或更新 PR 的 repo 需有 push 權限；沒有的話，使用你自己的 fork
 
-不需要額外的 API key。`watch-pr-feedback` 另需 `gh` 與 Python 3（只用標準函式庫）執行輪詢腳本；`audit-repository` 的覆蓋率腳本使用 Python 3.10 以上版本（只用標準函式庫），沒有 Python 時可改用 Git 手動記錄。審查本機 repository 不需要 GitHub 登入或 push 權限。
+不需要額外的 API key。`watch-pr-feedback` 另需 `gh` 與 Python 3（只用標準函式庫）執行輪詢腳本；`audit-repository` 的覆蓋率腳本使用 Python 3.10 以上版本（只用標準函式庫），沒有 Python 時可改用 Git 手動記錄。Git 無法檢查該 repository 或有目錄無法列出時，這個腳本會直接失敗而不建立清單，避免把不完整的清單回報成覆蓋完成。審查本機 repository 不需要 GitHub 登入或 push 權限。
 
 ## 安裝
 
