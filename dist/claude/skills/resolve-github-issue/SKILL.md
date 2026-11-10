@@ -120,9 +120,4 @@ After tests pass, do one review separate from the implementation steps. Do not s
 
 Deliver concisely in the user's language: the verdict and key evidence, a summary of the fix, the actual test and review results, the commit SHA, the PR URL, the final state of the progress label and anything still pending. If no commit or PR was produced, say why clearly; never fabricate a success link.
 
-When a PR was opened, end with how to turn on PR auto-fix: only point it out, do not turn it on, and note that commits auto-fix pushes later do not go through this workflow's testing and review. Match the user's current client; if you cannot tell, list them all:
-
-- Claude Code desktop: Auto-fix in the ⋮ menu next to the PR.
-- Claude Code web/mobile: the PR's Auto-fix toggle, or ask Claude to watch the PR.
-- Claude Code CLI: run `/autofix-pr`; it creates a cloud session and requires the Claude GitHub App to be installed on the repo.
-- Codex: choose Fix under the PR's Checks, submitting manually each time; or comment `@codex fix the CI failures` on the PR on GitHub, which requires the repo to be connected to Codex.
+When a PR was opened, end with how to turn on PR auto-fix: only point it out, do not turn it on, and note that commits auto-fix pushes later do not go through this workflow's testing and review. Take the steps from the [auto-fix reference](references/auto-fix.md), matching the user's current client; if you cannot tell, list them all.

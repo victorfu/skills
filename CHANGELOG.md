@@ -2,10 +2,13 @@
 
 Behavior changes to the skills and the plugin package, newest first. These skills commit, push and post on your behalf, so read the entries between your installed version and the new one before updating. Docs-only and CI-only changes are left out.
 
-## Unreleased
+## 0.7.0 (2026-11-10)
 
+- **Default changed:** replies that `address-review-feedback` (and `watch-pr-feedback` through it) publishes now end with a one-line note that an AI agent wrote them on your behalf. Ask for it to be left out to get the old behavior.
 - Added `audit-repository`: audits a whole repository for verified, behavior-affecting bugs and reports them with a coverage ledger; read-only, with findings discussed before any fix.
 - `resolve-github-issue` has a subagent review the fix in a fresh context when the client supports one, given only the diff, the issue and the repo guidelines; its findings are verified before being acted on, for at most three rounds. Without a subagent it reviews in the same context as before, and the PR body says which kind of review was done.
+- `audit-repository` starts its subagents in a fresh context, and has one try to disprove each candidate before it is reported as confirmed.
+- `resolve-github-issue` reads the per-client auto-fix steps from a reference file only after a PR was opened.
 - `resolve-github-issue` tries a list of reproduction strategies before falling back to code inspection when the issue's steps do not reproduce directly.
 - `resolve-github-issue` PR bodies show the regression check failing before and passing after the fix, and state whether a revert fully undoes the change.
 - `resolve-github-issue` uses a repo's existing work-in-progress label (such as `wip` or `status: in progress`) as the progress label instead of creating a new `in progress` label.

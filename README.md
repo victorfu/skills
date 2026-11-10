@@ -121,7 +121,7 @@ Failing CI checks on the PR head are treated as concerns too, even when there ar
 
 It checks the latest code, requirements, callers and supported platforms, then classifies each concern as `VALID`, `INVALID`, `ALREADY_FIXED` or `NEEDS_INFO`. It verifies the proposed fix separately from the concern and checks public or dynamic entry points before deleting apparently unused code. When one item needs clarification, only that item and its dependents wait; independent authorized fixes continue.
 
-Invoking this skill defaults to verifying feedback, applying justified fixes, checking merge conflicts and builds, committing and pushing to the existing PR, and publishing replies to review comments. Explicit limits such as assessment-only, local-only, no push or no replies override those defaults. Asking for a reply draft does not publish it. Resolving threads still requires an explicit request; the workflow does not merge PRs or force-push.
+Invoking this skill defaults to verifying feedback, applying justified fixes, checking merge conflicts and builds, committing and pushing to the existing PR, and publishing replies to review comments. Each published reply ends with a one-line note that an AI agent wrote it on your behalf; ask for it to be left out if you do not want it. Explicit limits such as assessment-only, local-only, no push or no replies override those defaults. Asking for a reply draft does not publish it. Resolving threads still requires an explicit request; the workflow does not merge PRs or force-push.
 
 The skill's package is checked locally; full client invocation remains unverified.
 
