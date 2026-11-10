@@ -120,7 +120,8 @@ class InventoryTests(unittest.TestCase):
                         contextlib.redirect_stderr(stderr), contextlib.redirect_stdout(io.StringIO()):
                     result = inventory.main(['create', '--repo', str(source), '--out', str(self.out)])
                 self.assertEqual(result, 1)
-                self.assertIn(str(denied), stderr.getvalue())
+                # OSError renders filenames with repr(), escaping Windows separators.
+                self.assertIn(repr(str(denied)), stderr.getvalue())
                 self.assertFalse((self.out / 'ledger.json').exists())
 
     def test_unknown_path_does_not_partially_update_ledger(self):
