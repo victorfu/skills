@@ -1,0 +1,6 @@
+interface:
+  display_name: "Watch PR Feedback"
+  short_description: "Watch a PR and address new reviews and CI failures"
+  default_prompt: "Use $devflow:watch-pr-feedback to watch the PR I provide, address each new batch of review comments or failing CI with address-review-feedback, and keep going until no new feedback arrives."
+policy:
+  allow_implicit_invocation: false

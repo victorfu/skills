@@ -5,9 +5,11 @@
   "platform": "claude",
   "sha256": {
     "skills/address-review-feedback/LICENSE": "a37e0e9697144819e1d965176ac4ae5bc3fa02d11e7812036bbcadf6dafe2400",
-    "skills/address-review-feedback/SKILL.md": "4fd73ef777d0f505b6f253a60c5feaf7795dda8f9e70075e32b0adedd1dc64d6",
-    "skills/address-review-feedback/references/upstream.md": "7844ca7c847da310e610bab86ead39102da3298ad0ef052e6f39336723e3fc39",
+    "skills/address-review-feedback/SKILL.md": "defc16d9faef71acc85a5b798402285ba0710720cde9fa07a677019af8a9f927",
     "skills/resolve-github-issue/SKILL.md": "e6d1750b4513dbba54e6b6c3e07b4db6b6eccd853ef7e3e2d98f9d243f9399bc",
-    "skills/resolve-github-issue/references/github-workflow.md": "fcb09bbf6364b28f541bfedf8bba1d68c58ef5c46118775808f742fd32b8febe"
+    "skills/resolve-github-issue/references/github-workflow.md": "fcb09bbf6364b28f541bfedf8bba1d68c58ef5c46118775808f742fd32b8febe",
+    "skills/watch-pr-feedback/SKILL.md": "c0c671a5b0e41f8bb7758aaa325a741e7c3bc863916c45fc4018fc67b295ab09",
+    "skills/watch-pr-feedback/scripts/__pycache__/watch_pr.cpython-315.pyc": "341213950f477083444c99b5f36459c26b03045c3bbeba476c136f021fb3c447",
+    "skills/watch-pr-feedback/scripts/watch_pr.py": "4090ad23d4d814dc937a01c68aa463064daad7ea501e7b4eb278deca085e28e6"
   }
 }
