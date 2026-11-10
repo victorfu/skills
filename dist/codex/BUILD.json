@@ -12,7 +12,6 @@
     "skills/resolve-github-issue/references/github-workflow.md": "fcb09bbf6364b28f541bfedf8bba1d68c58ef5c46118775808f742fd32b8febe",
     "skills/watch-pr-feedback/SKILL.md": "28ed9f8121d8241ca36b855fed51f5bc1709b6f8467940010efbcc6272e58225",
     "skills/watch-pr-feedback/agents/openai.yaml": "49450c54ac604d6530bba9ff1374e206db2dda7c131c6e32d1879ba9b437e337",
-    "skills/watch-pr-feedback/scripts/__pycache__/watch_pr.cpython-315.pyc": "341213950f477083444c99b5f36459c26b03045c3bbeba476c136f021fb3c447",
     "skills/watch-pr-feedback/scripts/watch_pr.py": "4090ad23d4d814dc937a01c68aa463064daad7ea501e7b4eb278deca085e28e6"
   }
 }

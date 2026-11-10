@@ -44,8 +44,10 @@ def frontmatter(data):
 
 
 def hidden(path, base):
-    # Skips OS/editor clutter such as .DS_Store anywhere below base.
-    return any(part.startswith('.') for part in path.relative_to(base).parts)
+    # Skips OS/editor clutter such as .DS_Store and Python bytecode caches anywhere below base;
+    # these are gitignored, so packaging them would make the build differ from a clean checkout.
+    parts = path.relative_to(base).parts
+    return any(part.startswith('.') or part == '__pycache__' for part in parts) or path.suffix == '.pyc'
 
 
 def ship_icon(output, platform, image):
