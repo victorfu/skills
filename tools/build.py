@@ -43,6 +43,42 @@ def frontmatter(data):
     return load_mapping(parts[0], 'SKILL.md frontmatter'), parts[1]
 
 
+def strip_fences(text):
+    # Blank out fenced code blocks (``` or ~~~, indented up to three spaces) so command
+    # examples are not linted as prose. Line count is preserved.
+    lines, fence = [], None
+    for line in text.split('\n'):
+        marker = re.match(r' {0,3}(`{3,}|~{3,})', line)
+        if fence is None:
+            if marker:
+                fence = marker.group(1)
+            lines.append('' if marker else line)
+            continue
+        run = marker.group(1) if marker else ''
+        # A fence closes on a bare run of the same character at least as long as the opener.
+        if run[:1] == fence[0] and len(run) >= len(fence) and not line.strip().strip(fence[0]):
+            fence = None
+        lines.append('')
+    return '\n'.join(lines)
+
+
+def check_prose(skill, body, skill_names):
+    prose = strip_fences(body)
+    for link in re.findall(r'\]\(([^)]+)\)', prose):
+        if '://' not in link and not link.startswith('#'):
+            target = (skill / link.split('#')[0]).resolve()
+            require(target.is_relative_to(skill.resolve()) and target.is_file(), f'{skill.name}: Broken reference: {link}')
+    # A skill may tell the agent to read a sibling skill by path; renaming or removing that
+    # sibling must fail the build instead of shipping a dead instruction.
+    for sibling, rest in re.findall(r'\.\./([A-Za-z0-9_-]+)/([A-Za-z0-9_./-]+)', prose):
+        rest = rest.rstrip('.')
+        require(sibling in skill_names and (skill.parent / sibling / rest).is_file(), f'{skill.name}: Broken sibling reference: ../{sibling}/{rest}')
+    sections = set(re.findall(r'^## (\d+)\. ', prose, re.M))
+    for first, last in re.findall(r'\bsections? (\d+)(?: (?:to|and) (\d+))?', prose, re.I):
+        for number in filter(None, (first, last)):
+            require(number in sections, f'{skill.name}: Unknown section reference: section {number}')
+
+
 def hidden(path, base):
     # Skips OS/editor clutter such as .DS_Store and Python bytecode caches anywhere below base;
     # these are gitignored, so packaging them would make the build differ from a clean checkout.
@@ -83,10 +119,7 @@ def expected_files():
         invocation = f"${release['name']}:{skill.name}"
         require(invocation in re.findall(r'\$[a-z0-9:-]+', ui['interface']['default_prompt']), 'Missing plugin-qualified invocation name')
         require('$ARGUMENTS' not in data.decode('utf-8'), 'Use the neutral input contract')
-        for link in re.findall(r'\]\(([^)]+)\)', body):
-            if '://' not in link and not link.startswith('#'):
-                target = (skill / link.split('#')[0]).resolve()
-                require(target.is_relative_to(skill.resolve()) and target.is_file(), f'Broken reference: {link}')
+        check_prose(skill, body, {p.name for p in skills})
         for source in sorted(p for p in skill.rglob('*') if not hidden(p, skill)):
             require(not source.is_symlink(), f'Packages must not depend on symlinks: {source}')
             if not source.is_file():

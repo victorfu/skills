@@ -213,7 +213,7 @@ python3 "$SKILL_DIR/scripts/repo_inventory.py" mark \
 
 For many completed files, pass an exact newline-delimited UTF-8 list through `--paths-file` or `--stdin`. Add only files actually read in full. Paths must be written exactly as they appear in the list files: forward slashes on every platform, and a trailing `/` on directory entries. A rejected `mark` (exit 2: an unknown path, or a status the entry cannot take) changes nothing; fix the batch and run it again. Run `mark` from one process at a time: concurrent calls overwrite each other's updates, so subagents return their reviewed paths and the primary agent marks them.
 
-When subagents are available and the repository is large, partition the ledger into non-overlapping path sets. Require each subagent to return reviewed paths, candidate evidence, and unresolved dependencies. The primary agent must independently double-check every reported finding and merge coverage without gaps or duplicate claims.
+When subagents are available and the repository is large, partition the ledger into non-overlapping path sets. Start each subagent in a fresh context window, not a fork of this conversation. Require each subagent to return reviewed paths, candidate evidence, and unresolved dependencies. The primary agent must independently double-check every reported finding and merge coverage without gaps or duplicate claims.
 
 ### 6. Run safe, repository-defined verification
 
@@ -240,6 +240,8 @@ For each candidate, write a private evidence record before deciding whether to r
 6. **Consequence:** crash, wrong result, data loss/corruption, security impact, stuck state, resource leak, incompatible deployment, or another observable failure.
 7. **False-positive checks:** upstream validation, caller guarantees, downstream recovery, feature flags, platform/version rules, and intentional behavior.
 8. **Verification:** reproduction, failing test, compiler/type error, exact runtime trace, or a logically inevitable path.
+
+When subagents are available, give each candidate you intend to report as confirmed to a subagent in a fresh context window. Pass the location, trigger and contract from the evidence record, without your causal chain or conclusion, and ask it to find why the defect cannot happen: a guard, a caller guarantee, a version rule or intended behavior. Check its answer against the code yourself. A candidate it disproves with evidence is not a bug; one it cannot settle stays a potential issue.
 
 Classify as follows:
 
@@ -301,7 +303,7 @@ Lead with findings, sorted by severity and then confidence. Do not bury confirme
 - **Expected behavior:** <contract>
 - **Actual behavior:** <observable wrong result>
 - **Impact:** <who/what is affected>
-- **Double-check performed:** <caller guards, versions, recovery, tests checked>
+- **Double-check performed:** <caller guards, versions, recovery, tests checked; whether a fresh-context subagent tried to disprove it>
 - **Verification:** <exact command/repro or logical proof; include outcome>
 - **Fix direction (discussion only):** <minimal conceptual correction; no patch>
 

@@ -157,6 +157,37 @@ class BuildTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'Broken reference'):
             self.run_build()
 
+    def append_to_skill(self, name, text):
+        path = self.root / f'skills/{name}/SKILL.md'
+        write_lf(path, path.read_text(encoding='utf-8') + text)
+
+    def test_reject_missing_sibling_skill(self):
+        # watch-pr-feedback tells the agent to read ../address-review-feedback/SKILL.md.
+        shutil.rmtree(self.root / 'skills/address-review-feedback')
+        with self.assertRaisesRegex(ValueError, 'Broken sibling reference'):
+            self.run_build()
+
+    def test_reject_unknown_section_reference(self):
+        for text in ('\nSee section 9.\n', '\nFollow sections 2 to 9.\n'):
+            with self.subTest(text=text):
+                original = (self.root / 'skills/resolve-github-issue/SKILL.md').read_bytes()
+                self.append_to_skill('resolve-github-issue', text)
+                with self.assertRaisesRegex(ValueError, 'Unknown section reference: section 9'):
+                    self.run_build()
+                (self.root / 'skills/resolve-github-issue/SKILL.md').write_bytes(original)
+
+    def test_fenced_examples_are_not_linted(self):
+        for fence in ('```', '~~~', '  ````'):
+            with self.subTest(fence=fence):
+                original = (self.root / 'skills/resolve-github-issue/SKILL.md').read_bytes()
+                self.append_to_skill('resolve-github-issue', f'\n{fence}text\n[x](missing.md) ../nope/SKILL.md section 9\n{fence}\n')
+                self.run_build()
+                # The same text outside a fence is still rejected.
+                self.append_to_skill('resolve-github-issue', '\n[x](missing.md)\n')
+                with self.assertRaisesRegex(ValueError, 'Broken reference'):
+                    self.run_build()
+                (self.root / 'skills/resolve-github-issue/SKILL.md').write_bytes(original)
+
     def test_reject_output_symlink(self):
         outside = self.root / 'outside'
         outside.mkdir()

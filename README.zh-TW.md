@@ -121,7 +121,7 @@ PR head 上失敗的 CI checks 也會當作待處理的意見，即使沒有任�
 
 它會核對最新程式碼、需求、呼叫端及支援平台，將各項意見判定為 `VALID`、`INVALID`、`ALREADY_FIXED` 或 `NEEDS_INFO`。意見成立與建議修法是否正確會分開驗證；刪除看似未使用的程式碼前，也會檢查公開 API 或動態呼叫。有一項需要釐清時，只暫停該項及其相依修改，其他已驗證且已授權的項目會繼續。
 
-明確叫用後，預設會驗證意見、修復成立的問題、檢查合併衝突與 build、commit 並 push 更新既有 PR，最後回覆 review comments。使用者明確要求只驗證、只修改本機、不 push 或不回覆時，會依限制執行；要求回覆草稿不會直接發送。Resolve threads 仍需明確要求，流程不會 merge PR 或 force push。
+明確叫用後，預設會驗證意見、修復成立的問題、檢查合併衝突與 build、commit 並 push 更新既有 PR，最後回覆 review comments。每則發布的回覆結尾會附一行說明，表示這是 AI agent 代你撰寫的；不需要時請在叫用時說明。使用者明確要求只驗證、只修改本機、不 push 或不回覆時，會依限制執行；要求回覆草稿不會直接發送。Resolve threads 仍需明確要求，流程不會 merge PR 或 force push。
 
 此 skill 已在本機檢查打包，完整客戶端叫用尚未驗證。
 
@@ -163,7 +163,7 @@ claude plugin update devflow@victorfu-skills
 codex plugin marketplace upgrade victorfu-skills
 ```
 
-更新後重新啟動客戶端。Claude Code 只有在 plugin 版本號改變時才會換成新內容。
+更新後重新啟動客戶端。Claude Code 只有在 plugin 版本號改變時才會換成新內容。各版本的變更（包含預設行為的改變）列在 [CHANGELOG.md](CHANGELOG.md)（英文）。
 
 ## 從 `dev-workflow-kit` 遷移
 

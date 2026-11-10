@@ -23,13 +23,13 @@ Parse every page of the last two APIs; do not conclude evidence is absent becaus
 
 ## The in progress label
 
-First read the issue's existing labels and save label_preexisting. List all repo labels rather than only the first page; GitHub label names are case-insensitive, so compare case-insensitively too. If a label such as In Progress already exists, replace "in progress" in the commands below with its actual name:
+First read the issue's existing labels and save label_preexisting. List all repo labels rather than only the first page; GitHub label names are case-insensitive, so compare case-insensitively too. If a label such as In Progress already exists, replace "in progress" in the commands below with its actual name. Do the same when the repo's guidelines or label list show that work in progress is already marked under another name, such as wip or status: in progress:
 
 ~~~text
 gh api --hostname HOST --paginate repos/OWNER/REPO/labels
 ~~~
 
-Create it **only if it still does not exist after the case-insensitive comparison**. If you hit an error because someone else created it at the same time, re-read to confirm and then continue; do not overwrite with --force:
+Create it **only if neither it nor an equivalent progress label exists after the case-insensitive comparison**. If you hit an error because someone else created it at the same time, re-read to confirm and then continue; do not overwrite with --force:
 
 ~~~text
 gh label create "in progress" --repo HOST/OWNER/REPO --color "FBCA04" --description "Issue investigation or implementation is in progress"

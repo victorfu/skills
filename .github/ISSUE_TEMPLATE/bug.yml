@@ -1,0 +1,66 @@
+name: Bug
+description: A skill did the wrong thing in a real session. One bug per issue.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Report something that actually happened, not a hypothetical improvement. Put the steps first and keep it short.
+        Remove tokens, private repo names and anything else sensitive from pasted output.
+  - type: dropdown
+    id: skill
+    attributes:
+      label: Skill
+      options:
+        - resolve-github-issue
+        - address-review-feedback
+        - watch-pr-feedback
+        - audit-repository
+        - packaging / installation
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Plugin version or commit
+      description: From `claude plugin list` / `codex plugin list`, or the commit SHA you installed from. Check CHANGELOG.md first; it may already be fixed.
+      placeholder: 0.6.0
+    validations:
+      required: true
+  - type: input
+    id: client
+    attributes:
+      label: Client, version and OS
+      placeholder: Claude Code CLI 2.1.322 on Windows 11, or Codex CLI 0.164.0 on macOS
+    validations:
+      required: true
+  - type: input
+    id: model
+    attributes:
+      label: Model
+      description: Model and effort level, if you know them.
+    validations:
+      required: false
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: The exact invocation, the smallest steps that show the problem, and what the skill did. Paste the relevant part of the session.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+      description: What the skill should have done, and which line of its SKILL.md says so (if any).
+    validations:
+      required: true
+  - type: checkboxes
+    id: side-effects
+    attributes:
+      label: Unwanted side effects
+      description: Tick anything the skill did that you had not authorized.
+      options:
+        - label: Changed labels, or posted a comment or reply
+        - label: Committed or pushed
+        - label: Opened, merged or closed a PR or issue
