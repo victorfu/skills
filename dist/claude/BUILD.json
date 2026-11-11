@@ -1,7 +1,7 @@
 {
   "generated": true,
   "source": "skills/",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "platform": "claude",
   "sha256": {
     "skills/address-review-feedback/LICENSE": "a37e0e9697144819e1d965176ac4ae5bc3fa02d11e7812036bbcadf6dafe2400",
