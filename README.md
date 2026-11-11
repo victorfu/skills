@@ -148,7 +148,7 @@ $devflow:audit-repository https://github.com/OWNER/REPO
 $devflow:audit-repository
 ```
 
-It inventories tracked and untracked, non-ignored files, reviews the full first-party scope, and double-checks each candidate against callers, contracts and supported versions. The report separates confirmed bugs from potential issues and states coverage and verification limits. Reports default to Traditional Chinese unless another language is requested.
+It inventories tracked and untracked, non-ignored files, reviews the full first-party scope, and double-checks each candidate against callers, contracts and supported versions. The report separates confirmed bugs from potential issues and states coverage and verification limits. Reports are written in the language of your request unless you ask for another one.
 
 This skill is read-only: it does not fix code, create branches, commit, push, open issues or PRs, or automatically start another skill. Audit metadata and reproductions stay outside the target repository. A later explicit request is needed to implement fixes. Failure evidence is investigated first, but the full audit continues unless you explicitly narrow the scope.
 

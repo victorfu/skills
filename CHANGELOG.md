@@ -6,6 +6,10 @@ Behavior changes to the skills and the plugin package, newest first. These skill
 
 - `watch-pr-feedback` poll mode re-reads the PR head after each query and retries when someone pushed mid-query, so a push no longer lets it report `quiet` or `ci_failed` for the previous head and stop watching the new commits.
 - `watch-pr-feedback` counts a CI failure reported in a poll-mode `baseline` as that head's one report, so an unchanged head (for example after a local-only fix) no longer triggers a second `ci_failed` round.
+- **Default changed:** `audit-repository` writes its report in the language of the request instead of always using Traditional Chinese.
+- `resolve-github-issue` confirms the working-tree diff is not empty before handing it to the fresh-context reviewer.
+- `resolve-github-issue` and `address-review-feedback` give a recommended answer when a NEEDS_INFO gap is a decision for the user.
+- The build warns when a `SKILL.md` exceeds 500 lines.
 - `watch-pr-feedback` restarts the poll-mode settle window when its saved timer is unreadable or lies in the future, so a damaged state file or a clock that stepped backwards no longer blocks delivery.
 - `audit-repository` preserves whitespace in Git paths, so ignored targets with leading spaces and repository roots with trailing spaces are inventoried correctly.
 - `watch-pr-feedback` preserves poll-mode settling across helper restarts, so a settle window longer than one `--max-wait` can complete.

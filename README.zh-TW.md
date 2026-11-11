@@ -148,7 +148,7 @@ $devflow:audit-repository https://github.com/OWNER/REPO
 $devflow:audit-repository
 ```
 
-它會盤點 tracked 與未被忽略的 untracked 檔案、完整審查第一方範圍，再對照呼叫端、行為契約與支援版本雙重驗證每個候選問題。報告區分 Confirmed Bugs 與 Potential Issues，並列出覆蓋率和驗證限制；預設使用繁體中文，可指定其他語言。
+它會盤點 tracked 與未被忽略的 untracked 檔案、完整審查第一方範圍，再對照呼叫端、行為契約與支援版本雙重驗證每個候選問題。報告區分 Confirmed Bugs 與 Potential Issues，並列出覆蓋率和驗證限制；報告使用你提出請求時的語言，也可以另外指定。
 
 此 skill 僅進行唯讀審查，不會修正程式碼、建立分支、commit、push、開 issue 或 PR，也不會自動啟動其他 skill。審查記錄與重現資料放在目標 repo 外；實作修正需要後續明確要求。若提供錯誤資訊，會優先調查該路徑，再繼續完整審查，除非你明確縮小範圍。
 

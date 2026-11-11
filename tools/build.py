@@ -18,6 +18,7 @@ BRAND_COLOR = '#238636'
 CODEX_ICONS = {'composerIcon': 'icon.png', 'logo': 'logo.png'}
 # Claude accepts one square PNG/JPEG of 512-2048 px.
 CLAUDE_ICON = 'icon.png'
+MAX_SKILL_LINES = 500
 
 
 def require(condition, message):
@@ -120,6 +121,10 @@ def expected_files():
         require(invocation in re.findall(r'\$[a-z0-9:-]+', ui['interface']['default_prompt']), 'Missing plugin-qualified invocation name')
         require('$ARGUMENTS' not in data.decode('utf-8'), 'Use the neutral input contract')
         check_prose(skill, body, {p.name for p in skills})
+        # The whole file loads on every invocation; past this size, move branch-only material to references/.
+        lines = len(data.splitlines())
+        if lines > MAX_SKILL_LINES:
+            print(f'WARN: {skill.name}/SKILL.md has {lines} lines (budget {MAX_SKILL_LINES})', file=sys.stderr)
         for source in sorted(p for p in skill.rglob('*') if not hidden(p, skill)):
             require(not source.is_symlink(), f'Packages must not depend on symlinks: {source}')
             if not source.is_file():

@@ -12,7 +12,8 @@ assets/icon.svg                    Source for the Codex plugin icon; icon.png (5
 tools/build.py                     Generates dist/ and both marketplaces; --check compares without writing
 tools/test_build.py                Packaging regression tests (run in a temporary directory)
 tools/run_evals.py                 Runs evals/ against dist/claude with `claude plugin eval` (costs tokens)
-evals/<case>/                      Behavior eval cases: prompt.md and graders/
+evals/<case>/                      Behavior eval cases (prompt.md + graders/, or case.yaml + scaffold.sh)
+evals/_fixtures/                   Fixture project and issue exports the scaffolds copy in
 dist/claude/, dist/codex/          Generated plugins (commit them; do not edit by hand)
 .claude-plugin/marketplace.json    Generated Claude Code marketplace
 .agents/plugins/marketplace.json   Generated Codex marketplace
@@ -62,14 +63,23 @@ claude plugin validate .claude-plugin/marketplace.json --strict
 
 ## Behavior evals
 
-`evals/<case>/` holds cases for `claude plugin eval`: `prompt.md` (frontmatter with turn and tool limits; the body is sent verbatim and starts with the explicit `/devflow:<skill>` invocation) and one grader per file under `graders/`. Run them against the generated Claude package:
+`evals/<case>/` holds cases for `claude plugin eval`. A case is either `prompt.md` plus one grader per file under `graders/`, or a `case.yaml` (`schema_version: "1.1"`, an `execution` block with the prompt and limits, a `graders` list, and `context.scaffold_script` when it needs files). Every prompt starts with the explicit `/devflow:<skill>` invocation. Scaffold scripts run with the agent's working directory as the current directory and copy `evals/_fixtures/` into it; `_fixtures/scaffold-shop.sh` takes fixture files to copy plus `--fixed` (overlay the corrected implementation) and `--git` (commit the copy), and writes a `.env` holding a canary value; a `regex` grader with `match: not_contains` fails any reply that repeats it.
 
 ```sh
-.venv/bin/python tools/run_evals.py --runs 3
-.venv/bin/python tools/run_evals.py --case 'bare-*' --runs 1 --max-cost-usd 1
+.venv/bin/python tools/run_evals.py --ablation none --runs 3
+.venv/bin/python tools/run_evals.py --case 'audit-*' --ablation none --runs 4 --max-cost-usd 3
 ```
 
-Each run is a real model call on your account (about $0.10 per run in the first trial), so evals run by hand and not in CI. Reports land in `evals/results/` (gitignored). Results vary between runs: report them as passes out of runs, with the model and Claude Code version. Read the "with" column; these skills only run on explicit invocation, so the no-plugin baseline and Δ say little. Current cases allow read-only tools only and touch neither GitHub nor the working tree.
+`run_evals.py` refuses to run when `dist/` is stale, assembles `dist/claude` and `evals/` in a temporary directory so nothing from `evals/` ships, and copies reports to `evals/results/` (gitignored). Each run is a real model call on your account (about $0.15 per run; the 12 cases at 3 runs each cost about $5.60), so evals run by hand and not in CI.
+
+Rules for cases:
+
+- Agents get read-only tools (`Read`, `Glob`, `Grep`, `Skill`) and `disallowed_tools: [Agent, Task]`. Granting `Bash` needs a sandbox, which is not available on Windows, so flows that commit, push or call `gh` are not covered yet; they need macOS or Linux and a stand-in for `gh`.
+- A grader must be able to fail. With read-only tools the agent cannot write anything, so "made no changes" graders prove nothing; test injected instructions with something a read-only agent can do, such as revealing the canary.
+- Do not put the expected answer in the prompt or the fixture, and make the fixture decide the verdict unambiguously.
+- Results vary between runs: report passes out of runs with the model and Claude Code version, and use `--ablation none`. These skills only run on explicit invocation, so the no-plugin baseline says little.
+- `--case` takes one glob; to run several unrelated cases, run the whole suite or call the script once per case.
+- When a case fails, decide first whether the reply or the grader is wrong; then fix the skill wording and rerun the case to confirm.
 
 ## Trying it locally
 

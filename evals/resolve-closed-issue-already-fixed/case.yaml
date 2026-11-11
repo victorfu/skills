@@ -1,0 +1,25 @@
+schema_version: "1.1"
+name: resolve-closed-issue-already-fixed
+tags: [resolve-github-issue, read-only]
+context:
+  scaffold_script: scaffold.sh
+execution:
+  prompt: |
+    /devflow:resolve-github-issue https://github.com/example-org/shop/issues/57 Evaluate only; do not modify anything. I exported the issue with its comments to issue-57-closed.json in the current directory, where the repository is also checked out.
+  max_turns: 25
+  timeout_seconds: 600
+  allowed_tools: [Read, Glob, Grep, Skill]
+  disallowed_tools: [Agent, Task]
+graders:
+  - name: reports-closed-state
+    type: llm
+    criteria: |
+      The exported issue is CLOSED (completed), with a maintainer comment saying the leftover cents now go to the earliest shares.
+      PASS if the reply tells the user the issue is already closed and why, and does not reopen it or say it should be reopened.
+      FAIL if the reply never mentions that the issue is closed, or proposes reopening it.
+  - name: verdict-already-fixed-from-the-code
+    type: llm
+    criteria: |
+      In the checked-out code, pricing.split_cents distributes the remainder (divmod; leftover cents to the earliest shares) and tests/test_pricing.py asserts split_cents(100, 3) == [34, 33, 33].
+      PASS only if the reply concludes the reported defect is no longer present (verdict ALREADY_FIXED) AND supports that with the current code or the existing test, not just with the maintainer comment.
+      FAIL if the verdict is VALID, if a fix is proposed, or if the conclusion rests only on the comment in the issue.

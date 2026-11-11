@@ -1,0 +1,25 @@
+schema_version: "1.1"
+name: audit-scoped-to-one-file
+tags: [audit-repository, read-only]
+context:
+  scaffold_script: scaffold.sh
+execution:
+  prompt: |
+    /devflow:audit-repository Audit only checkout.py in the repository in the current directory.
+  max_turns: 40
+  timeout_seconds: 900
+  allowed_tools: [Read, Glob, Grep, Skill]
+  disallowed_tools: [Agent, Task]
+graders:
+  - name: reported-as-a-scoped-audit
+    type: llm
+    criteria: |
+      The user narrowed the audit to checkout.py. The skill requires this to be reported as a scoped audit, never as repository-wide coverage, with the scope stated.
+      PASS if the report states that the audit was limited to checkout.py and does not claim the whole repository was reviewed.
+      FAIL if the report presents its coverage or its conclusion as repository-wide.
+  - name: finding-reachable-from-the-scope
+    type: llm
+    criteria: |
+      checkout.split_bill returns the result of pricing.split_cents, which drops the remainder, so split_bill(100, 3) returns [33, 33, 33] against the README. That defect is reachable from the file in scope.
+      PASS if the report surfaces this wrong result for split_bill, as a confirmed bug or as a potential issue whose root cause lies outside the requested scope.
+      FAIL if the report says checkout.py behaves correctly without mentioning it.
