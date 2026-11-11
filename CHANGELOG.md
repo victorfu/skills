@@ -2,7 +2,7 @@
 
 Behavior changes to the skills and the plugin package, newest first. These skills commit, push and post on your behalf, so read the entries between your installed version and the new one before updating. Docs-only and CI-only changes are left out.
 
-## Unreleased
+## 0.9.0 (2026-11-11)
 
 - **Default changed:** `watch-pr-feedback` now treats comments from your own `gh` account as feedback, so reviewing your own PR with that account starts a round. It skips only replies carrying the hidden `<!-- devflow:agent-reply -->` marker. Ask it to ignore your account (`--ignore-self`) to get the old behavior.
 - `address-review-feedback` publishes replies through a new `post_reply.py` helper that appends the marker (or appends it by hand through a connector), keeps it when the AI note is left out, and never replies to or acts on its own earlier marked replies.
