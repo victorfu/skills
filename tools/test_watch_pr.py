@@ -47,7 +47,7 @@ class PollTests(unittest.TestCase):
     def saved(self):
         return api.load_state(self.path)
 
-    def invoke(self, items, max_wait=0, pr=PR, polls=None):
+    def invoke(self, items, max_wait=0, pr=PR, polls=None, checks=()):
         # polls: one feedback list per fetch, the last repeating, for changes within a single run.
         remaining = list(polls or [])
 
@@ -64,7 +64,7 @@ class PollTests(unittest.TestCase):
 
         with patch.object(sys, 'argv', argv), patch.object(api, 'fetch_pr', return_value=pr), \
                 patch.object(api, 'fetch_feedback', side_effect=feedback), \
-                patch.object(api, 'fetch_checks', return_value=[]), \
+                patch.object(api, 'fetch_checks', return_value=list(checks)), \
                 patch.object(api.time, 'time', side_effect=lambda: self.now), \
                 patch.object(api.time, 'sleep', side_effect=sleep), redirect_stdout(io.StringIO()) as output:
             api.main()
@@ -230,6 +230,21 @@ class PollTests(unittest.TestCase):
         self.assertEqual(self.invoke([ITEM])['event'], 'waiting')
         self.now = 7
         self.assertEqual(self.invoke([ITEM])['event'], 'feedback')
+
+    def test_baseline_ci_failure_is_not_reported_again_for_the_same_head(self):
+        self.path.unlink()
+        event = self.invoke([], checks=FAIL)
+        self.assertEqual((event['event'], event['ci']), ('baseline', 'failing'))
+        self.assertEqual(self.saved()['ci_reported'], ['abc'])
+        self.assertEqual(self.invoke([], checks=FAIL)['event'], 'waiting')
+        event = self.invoke([], checks=FAIL, pr=dict(PR, headRefOid='def'))
+        self.assertEqual((event['event'], event['head']), ('ci_failed', 'def'))
+
+    def test_baseline_without_ci_failure_leaves_the_head_reportable(self):
+        self.path.unlink()
+        self.assertEqual(self.invoke([])['ci'], 'none')
+        self.assertEqual(self.saved()['ci_reported'], [])
+        self.assertEqual(self.invoke([], checks=FAIL)['event'], 'ci_failed')
 
 
 class HybridTests(unittest.TestCase):

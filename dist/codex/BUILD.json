@@ -20,7 +20,7 @@
     "skills/watch-pr-feedback/agents/openai.yaml": "49450c54ac604d6530bba9ff1374e206db2dda7c131c6e32d1879ba9b437e337",
     "skills/watch-pr-feedback/references/hybrid.md": "324a427397d83799329488f82d16d76634b94de08d65e2f9447c0d679bb6b8d3",
     "skills/watch-pr-feedback/scripts/hybrid_watch.py": "f96b5d1b40e72d80864e71caaa02344cbf297fb841dbf6118f6110a3c1142c39",
-    "skills/watch-pr-feedback/scripts/watch_pr.py": "de2744bf236c9318701fee64eff27d12840602923e72c0ea84d1c5e92dc1bad3",
+    "skills/watch-pr-feedback/scripts/watch_pr.py": "ebe5a15f205ae09b67b627ca28fb181e844484bb4abc3450e66e50ef3fc94517",
     "skills/watch-pr-feedback/scripts/webhook_receiver.py": "3cb9e6b2a85ab391190e51b19e3aa012e169c0d55c55ee3a1ef2a87e364591b6"
   }
 }

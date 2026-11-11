@@ -267,8 +267,10 @@ def main():
     now = time.time()
     if state is None or state.get('target') != target:
         status, failing, _ = summarize_checks(checks)
+        # Baseline hands a failing head to an address round, so it counts as that head's one CI report.
         save_state(state_path, {'target': target, 'seen': sorted(i['key'] for i in feedback),
-                                'head': pr['headRefOid'], 'quiet_since': now, 'ci_reported': []})
+                                'head': pr['headRefOid'], 'quiet_since': now,
+                                'ci_reported': [pr['headRefOid']] if status == 'failing' else []})
         emit('baseline', url=pr['url'], pr_state=pr['state'], head=pr['headRefOid'], mergeable=pr.get('mergeable'),
              existing_feedback=len(feedback), ci=status, failing_checks=failing, ignored_authors=sorted(ignored))
         return
