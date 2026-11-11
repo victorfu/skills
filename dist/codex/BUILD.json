@@ -5,8 +5,9 @@
   "platform": "codex",
   "sha256": {
     "skills/address-review-feedback/LICENSE": "a37e0e9697144819e1d965176ac4ae5bc3fa02d11e7812036bbcadf6dafe2400",
-    "skills/address-review-feedback/SKILL.md": "1fd9c48f30ee19fc03064789f426dc702484ec5e96a1410650cec93f37d4340e",
+    "skills/address-review-feedback/SKILL.md": "f27151c24721182687abc211328aab1b67e478dd404305057f41b88ff357a14f",
     "skills/address-review-feedback/agents/openai.yaml": "f2a9709b8f2b1d8fc9c011c8b8218f415fc5c69a593ace8e46ec90dd427e81d6",
+    "skills/address-review-feedback/scripts/post_reply.py": "116360204574d9d7d3ef34d35acc93514c9d7823ec8017bc6b8a7695d10610a4",
     "skills/audit-repository/SKILL.md": "196cdd2ddda07a7c1a6a0f90ae4ac07a0c8f9c2c74d27b6c31ebb9e01cccdfc7",
     "skills/audit-repository/agents/openai.yaml": "d869ef58b6b24baad297e4dde258fe88211a414146df2b3e08cf159da3337ce9",
     "skills/audit-repository/assets/icon.svg": "8936b24f674a1250d999e2c2b5901374fb4240426f32bd1ae340c352a90d617d",
@@ -16,11 +17,11 @@
     "skills/resolve-github-issue/references/auto-fix.md": "21881697622fa56790d78259cd810fd0e729c04da9255a396ed823e551d0d941",
     "skills/resolve-github-issue/references/github-workflow.md": "a26fa99fa06654009ff1df730e0efc1a2f3e8a44730ccf798c7e3281f82db6c2",
     "skills/resolve-github-issue/references/reproduction.md": "ee82d4eb26ab53d4bcccba71c3d2c92889ac1a10ecbe749627d06d7b1fceda1d",
-    "skills/watch-pr-feedback/SKILL.md": "6748f881cd28261da31809e6699dfa710e60bc2b10fd2cc0563373ea4ba85a9e",
+    "skills/watch-pr-feedback/SKILL.md": "f2a0c8161eba36dc8647937c5ee9c1fb44256b93ad04dface024a087f4320466",
     "skills/watch-pr-feedback/agents/openai.yaml": "49450c54ac604d6530bba9ff1374e206db2dda7c131c6e32d1879ba9b437e337",
     "skills/watch-pr-feedback/references/hybrid.md": "324a427397d83799329488f82d16d76634b94de08d65e2f9447c0d679bb6b8d3",
-    "skills/watch-pr-feedback/scripts/hybrid_watch.py": "f96b5d1b40e72d80864e71caaa02344cbf297fb841dbf6118f6110a3c1142c39",
-    "skills/watch-pr-feedback/scripts/watch_pr.py": "ebe5a15f205ae09b67b627ca28fb181e844484bb4abc3450e66e50ef3fc94517",
+    "skills/watch-pr-feedback/scripts/hybrid_watch.py": "2291d43afb0642422ffa356fc202231ac8ec5132d1f9396bca7516ef69e72869",
+    "skills/watch-pr-feedback/scripts/watch_pr.py": "691524a030d18f0e4c6654ebe4adbdc8b678efa7f7711b33134be743682abcd9",
     "skills/watch-pr-feedback/scripts/webhook_receiver.py": "3cb9e6b2a85ab391190e51b19e3aa012e169c0d55c55ee3a1ef2a87e364591b6"
   }
 }

@@ -24,7 +24,7 @@ Watch one PR and run address-review-feedback for each new batch of review feedba
    - quiet window: 10 minutes with no new feedback after the last push or handled event, with no CI pending
    - settle time: 60 seconds after new feedback, so one review's comments are handled together
    - maximum: 10 address rounds or 4 hours of watching, whichever comes first
-   - authors to ignore (for example noisy bots), in addition to the authenticated gh user
+   - authors to ignore (for example noisy bots)
 4. Choose a state file outside the repo (the client's scratch/temp directory) named after the PR, and keep using the same path for the whole watch.
 
 ## 2. Wait with the helper script
@@ -40,7 +40,7 @@ python3 <skill-dir>/scripts/watch_pr.py <PR URL> --state <state file> \
 
 On Windows use `py -3` if `python3` is unavailable. Run it in the background if the client notifies you when a background command exits; otherwise run it in the foreground with a command timeout longer than `--max-wait`. Never busy-loop or poll faster than the interval.
 
-The script ignores comments by the authenticated gh user by default, because replies posted by this workflow use that account and would otherwise trigger endless rounds. Pass `--include-self` only if the user asks to treat their own comments as feedback. A push to the head restarts the quiet window; failing CI is reported once per head SHA.
+Comments by the authenticated gh user count as feedback, because users often review their own PRs with that account. The script skips only this workflow's own replies: comments from that account carrying the `<!-- devflow:agent-reply -->` marker that address-review-feedback appends to every reply. Pass `--ignore-self` only if the user asks to ignore everything their account posts. A push to the head restarts the quiet window; failing CI is reported once per head SHA.
 
 | Event | Action |
 | --- | --- |
@@ -51,7 +51,7 @@ The script ignores comments by the authenticated gh user by default, because rep
 | `quiet` | Finish (section 4). |
 | `closed` | Stop; the PR was merged or closed. |
 
-If the script fails (exit 1), read its stderr. Retry transient network or rate-limit errors after one interval, at most three times in a row; otherwise stop and report. If Python is unavailable, poll the same endpoints with gh directly and apply the same rules: track seen IDs, ignore your own account, restart the quiet window on each push, re-read the head after querying checks and start over if it changed, report CI failure once per head SHA.
+If the script fails (exit 1), read its stderr. Retry transient network or rate-limit errors after one interval, at most three times in a row; otherwise stop and report. If Python is unavailable, poll the same endpoints with gh directly and apply the same rules: track seen IDs, skip comments from your own account that carry the agent-reply marker, restart the quiet window on each push, re-read the head after querying checks and start over if it changed, report CI failure once per head SHA.
 
 ## 3. Run an address round
 

@@ -24,6 +24,14 @@ PR = {'state': 'OPEN', 'headRefOid': 'abc', 'url': 'https://github.com/o/r/pull/
 TARGET = {'host': 'github.com', 'repo': 'o/r', 'pr': 1}
 ITEM = {'key': 'review_comment:1', 'body': 'fix this', 'user': 'reviewer'}
 FAIL = [{'name': 'test', 'bucket': 'fail'}]
+MARKER = api.AGENT_MARKER
+
+
+def setUpModule():
+    # Every run resolves the gh account; keep the suite offline.
+    patcher = patch.object(api, 'current_login', return_value='me')
+    patcher.start()
+    unittest.addModuleCleanup(patcher.stop)
 
 
 def state():
@@ -56,7 +64,7 @@ class PollTests(unittest.TestCase):
                 return items
             return remaining.pop(0) if len(remaining) > 1 else remaining[0]
 
-        argv = ['watch_pr.py', PR['url'], '--state', str(self.path), '--include-self',
+        argv = ['watch_pr.py', PR['url'], '--state', str(self.path),
                 '--interval', '1', '--settle', '3', '--max-wait', str(max_wait)]
 
         def sleep(seconds):
@@ -182,7 +190,7 @@ class PollTests(unittest.TestCase):
             remote['headRefOid'] = 'def'
             return checks
 
-        argv = ['watch_pr.py', PR['url'], '--state', str(self.path), '--include-self',
+        argv = ['watch_pr.py', PR['url'], '--state', str(self.path),
                 '--interval', '1', '--max-wait', str(max_wait)]
         with patch.object(sys, 'argv', argv), \
                 patch.object(api, 'fetch_pr', side_effect=lambda *_: dict(remote)), \
@@ -211,7 +219,7 @@ class PollTests(unittest.TestCase):
 
     def test_poll_gives_up_when_the_head_keeps_moving(self):
         heads = iter(range(100))
-        argv = ['watch_pr.py', PR['url'], '--state', str(self.path), '--include-self', '--max-wait', '0']
+        argv = ['watch_pr.py', PR['url'], '--state', str(self.path), '--max-wait', '0']
         with patch.object(sys, 'argv', argv), \
                 patch.object(api, 'fetch_pr', side_effect=lambda *_: dict(PR, headRefOid=str(next(heads)))), \
                 patch.object(api, 'fetch_feedback', return_value=[]), \
@@ -410,7 +418,7 @@ class HybridTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             args = argparse.Namespace(pr=PR['url'], repo=None, host='github.com',
                 state=str(Path(folder) / 'state'), signal=str(Path(folder) / 'signal'),
-                ack=None, include_self=True, ignore_author=[], interval=60, quiet=600,
+                ack=None, ignore_self=False, ignore_author=[], interval=60, quiet=600,
                 settle=60, max_wait=30, reconcile=300)
             api.save_state(Path(args.state), state())
             clock = [0]
@@ -452,7 +460,7 @@ class HybridTests(unittest.TestCase):
             with self.subTest(active=active, quiet=quiet, items=items), tempfile.TemporaryDirectory() as folder:
                 args = argparse.Namespace(pr=PR['url'], repo=None, host='github.com',
                     state=str(Path(folder) / 'state'), signal=str(Path(folder) / 'signal'),
-                    ack=None, include_self=True, ignore_author=[], interval=60, quiet=quiet,
+                    ack=None, ignore_self=False, ignore_author=[], interval=60, quiet=quiet,
                     settle=settle, max_wait=540, reconcile=300)
                 api.save_state(Path(args.state), state())
                 clock, calls = [0], []
@@ -498,7 +506,7 @@ class HybridTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             args = argparse.Namespace(pr=PR['url'], repo=None, host='github.com',
                 state=str(Path(folder) / 'state'), signal=str(Path(folder) / 'signal'),
-                ack=None, include_self=True, ignore_author=[], interval=60, quiet=600,
+                ack=None, ignore_self=False, ignore_author=[], interval=60, quiet=600,
                 settle=0, max_wait=540, reconcile=300)
             api.save_state(Path(args.state), state())
             clock, calls = [0], []
@@ -520,7 +528,7 @@ class HybridTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             args = argparse.Namespace(pr=PR['url'], repo=None, host='github.com',
                 state=str(Path(folder) / 'state'), signal=str(Path(folder) / 'signal'),
-                ack=None, include_self=True, ignore_author=[], interval=60, quiet=600,
+                ack=None, ignore_self=False, ignore_author=[], interval=60, quiet=600,
                 settle=0, max_wait=0, reconcile=300)
             def invoke():
                 with patch.object(hybrid, 'snapshot', return_value=(PR, [ITEM], [])), redirect_stdout(io.StringIO()) as output:
@@ -653,6 +661,59 @@ class HybridTests(unittest.TestCase):
                     worker.join(10)
             self.assertFalse(worker.is_alive())
             self.assertEqual(api.load_state(signal)['reason'], 'receiver stopped on request')
+
+
+
+class OwnReplyTests(unittest.TestCase):
+    def fetch(self, comments, ignored=(), self_login='me', reviews=(), issue_comments=()):
+        def lines(path, jq, host):
+            if '/reviews' in path:
+                return [dict(r) for r in reviews]
+            if '/issues/' in path:
+                return [dict(c) for c in issue_comments]
+            return [dict(c) for c in comments]
+
+        with patch.object(api, 'gh_lines', side_effect=lines):
+            return api.fetch_feedback('github.com', 'o/r', 1, set(ignored), self_login=self_login)
+
+    def test_own_comment_without_marker_is_feedback(self):
+        items = self.fetch([{'id': 1, 'user': 'Me', 'body': 'please rename this'}])
+        self.assertEqual([i['key'] for i in items], ['review_comment:1'])
+
+    def test_own_marked_reply_is_skipped_in_every_kind(self):
+        reply = f'Fixed in abc123.\n\n_Written by an AI agent._\n{MARKER}'
+        items = self.fetch([{'id': 1, 'user': 'me', 'body': reply}],
+                           reviews=[{'id': 2, 'user': 'me', 'state': 'COMMENTED', 'body': reply}],
+                           issue_comments=[{'id': 3, 'user': 'me', 'body': reply}])
+        self.assertEqual(items, [])
+
+    def test_marker_past_the_excerpt_still_counts(self):
+        reply = 'x' * (api.EXCERPT * 2) + MARKER
+        self.assertEqual(self.fetch([{'id': 1, 'user': 'me', 'body': reply}]), [])
+
+    def test_marker_from_someone_else_is_still_feedback(self):
+        items = self.fetch([{'id': 1, 'user': 'reviewer', 'body': f'quoting: {MARKER} still broken'}])
+        self.assertEqual([i['key'] for i in items], ['review_comment:1'])
+
+    def test_unknown_login_skips_nothing(self):
+        items = self.fetch([{'id': 1, 'user': 'me', 'body': MARKER}], self_login='')
+        self.assertEqual(len(items), 1)
+
+    def test_ignore_self_restores_the_old_filter(self):
+        argv = ['watch_pr.py', PR['url'], '--state', 'unused', '--ignore-self', '--max-wait', '0']
+        seen = {}
+
+        def snapshot(host, repo, number, ignored, **kwargs):
+            seen.update(ignored=ignored, **kwargs)
+            raise api.GhError('stop')
+
+        for flags, expected in ((['--ignore-self'], {'me'}), ([], set())):
+            seen.clear()
+            with patch.object(sys, 'argv', argv[:4] + flags + argv[5:]), \
+                    patch.object(api, 'snapshot', side_effect=snapshot), \
+                    patch.object(api, 'load_state', return_value=None), self.assertRaises(api.GhError):
+                api.main()
+            self.assertEqual(seen, {'ignored': expected, 'self_login': 'me'})
 
 
 if __name__ == '__main__':
