@@ -28,14 +28,7 @@ def upgrade_seen(seen, items, current):
 
 def snapshot(host, repo, number, ignored):
     # Keep full bodies for versioning; emitted excerpts remain bounded.
-    for _ in range(3):
-        pr = api.fetch_pr(host, repo, number)
-        items = api.fetch_feedback(host, repo, number, ignored, full=True)
-        checks = api.fetch_checks(host, repo, number)
-        latest = api.fetch_pr(host, repo, number)
-        if pr['headRefOid'] == latest['headRefOid'] and pr['state'] == latest['state']:
-            return latest, items, checks
-    raise api.GhError('PR head changed repeatedly during refresh; retry')
+    return api.snapshot(host, repo, number, ignored, full=True)
 
 
 def read_signal(path):

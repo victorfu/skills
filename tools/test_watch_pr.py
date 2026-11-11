@@ -51,7 +51,7 @@ class PollTests(unittest.TestCase):
         # polls: one feedback list per fetch, the last repeating, for changes within a single run.
         remaining = list(polls or [])
 
-        def feedback(*_):
+        def feedback(*_, **__):
             if not remaining:
                 return items
             return remaining.pop(0) if len(remaining) > 1 else remaining[0]
@@ -173,6 +173,53 @@ class PollTests(unittest.TestCase):
         self.assertEqual(self.saved()['poll_settling']['since'], 10)
         self.now = 13
         self.assertEqual(self.invoke([ITEM])['event'], 'feedback')
+
+    def run_with_push_during_checks(self, checks, max_wait=0):
+        # The remote head moves from abc to def after the PR query, before the checks query.
+        remote = dict(PR)
+
+        def push_then_checks(*_):
+            remote['headRefOid'] = 'def'
+            return checks
+
+        argv = ['watch_pr.py', PR['url'], '--state', str(self.path), '--include-self',
+                '--interval', '1', '--max-wait', str(max_wait)]
+        with patch.object(sys, 'argv', argv), \
+                patch.object(api, 'fetch_pr', side_effect=lambda *_: dict(remote)), \
+                patch.object(api, 'fetch_feedback', return_value=[]), \
+                patch.object(api, 'fetch_checks', side_effect=push_then_checks), \
+                patch.object(api.time, 'time', side_effect=lambda: self.now), \
+                redirect_stdout(io.StringIO()) as output:
+            api.main()
+        return json.loads(output.getvalue())
+
+    def test_push_during_a_poll_restarts_quiet_instead_of_reporting_old_head(self):
+        self.now = 1000
+        event = self.run_with_push_during_checks([])
+        self.assertEqual(event['event'], 'waiting')
+        self.assertEqual(event['head'], 'def')
+        self.assertEqual(event['quiet_seconds'], 0)
+        saved = self.saved()
+        self.assertEqual((saved['head'], saved['quiet_since']), ('def', 1000))
+
+    def test_push_during_a_poll_does_not_charge_failing_checks_to_old_head(self):
+        self.now = 1000
+        event = self.run_with_push_during_checks(FAIL)
+        self.assertEqual(event['event'], 'ci_failed')
+        self.assertEqual(event['head'], 'def')
+        self.assertEqual(self.saved()['ci_reported'], ['def'])
+
+    def test_poll_gives_up_when_the_head_keeps_moving(self):
+        heads = iter(range(100))
+        argv = ['watch_pr.py', PR['url'], '--state', str(self.path), '--include-self', '--max-wait', '0']
+        with patch.object(sys, 'argv', argv), \
+                patch.object(api, 'fetch_pr', side_effect=lambda *_: dict(PR, headRefOid=str(next(heads)))), \
+                patch.object(api, 'fetch_feedback', return_value=[]), \
+                patch.object(api, 'fetch_checks', return_value=[]), \
+                redirect_stdout(io.StringIO()) as output, self.assertRaises(api.GhError):
+            api.main()
+        self.assertEqual(output.getvalue(), '')
+        self.assertEqual(self.saved()['head'], 'abc')
 
     def test_disappeared_batch_does_not_leave_an_old_timer(self):
         self.assertEqual(self.invoke([ITEM])['event'], 'waiting')
