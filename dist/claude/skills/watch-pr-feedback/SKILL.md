@@ -52,7 +52,7 @@ The script ignores comments by the authenticated gh user by default, because rep
 | `quiet` | Finish (section 4). |
 | `closed` | Stop; the PR was merged or closed. |
 
-If the script fails (exit 1), read its stderr. Retry transient network or rate-limit errors after one interval, at most three times in a row; otherwise stop and report. If Python is unavailable, poll the same endpoints with gh directly and apply the same rules: track seen IDs, ignore your own account, restart the quiet window on each push, report CI failure once per head SHA.
+If the script fails (exit 1), read its stderr. Retry transient network or rate-limit errors after one interval, at most three times in a row; otherwise stop and report. If Python is unavailable, poll the same endpoints with gh directly and apply the same rules: track seen IDs, ignore your own account, restart the quiet window on each push, re-read the head after querying checks and start over if it changed, report CI failure once per head SHA.
 
 ## 3. Run an address round
 

@@ -147,6 +147,18 @@ def fetch_checks(host, repo, number):
     raise GhError(f'gh pr checks failed ({result.returncode}): {detail}')
 
 
+def snapshot(host, repo, number, ignored, full=False):
+    """Query PR, feedback and checks, retrying until the head is the same before and after."""
+    for _ in range(3):
+        pr = fetch_pr(host, repo, number)
+        items = fetch_feedback(host, repo, number, ignored, full=full)
+        checks = fetch_checks(host, repo, number)
+        latest = fetch_pr(host, repo, number)
+        if pr['headRefOid'] == latest['headRefOid'] and pr['state'] == latest['state']:
+            return latest, items, checks
+    raise GhError('PR head changed repeatedly during refresh; retry')
+
+
 def summarize_checks(checks):
     buckets = {}
     for check in checks:
@@ -250,13 +262,15 @@ def main():
         ignored.add(gh('api', '--hostname', host, 'user', '--jq', '.login').strip().lower())
     target = {'host': host, 'repo': repo, 'pr': number}
 
-    pr = fetch_pr(host, repo, number)
-    feedback = fetch_feedback(host, repo, number, ignored)
+    # One consistent snapshot per poll: checks from a newer head must not be judged against an older one.
+    pr, feedback, checks = snapshot(host, repo, number, ignored)
     now = time.time()
     if state is None or state.get('target') != target:
-        status, failing, _ = summarize_checks(fetch_checks(host, repo, number))
+        status, failing, _ = summarize_checks(checks)
+        # Baseline hands a failing head to an address round, so it counts as that head's one CI report.
         save_state(state_path, {'target': target, 'seen': sorted(i['key'] for i in feedback),
-                                'head': pr['headRefOid'], 'quiet_since': now, 'ci_reported': []})
+                                'head': pr['headRefOid'], 'quiet_since': now,
+                                'ci_reported': [pr['headRefOid']] if status == 'failing' else []})
         emit('baseline', url=pr['url'], pr_state=pr['state'], head=pr['headRefOid'], mergeable=pr.get('mergeable'),
              existing_feedback=len(feedback), ci=status, failing_checks=failing, ignored_authors=sorted(ignored))
         return
@@ -297,7 +311,6 @@ def main():
         elif state.pop('poll_settling', None) is not None:
             save_state(state_path, state)
 
-        checks = fetch_checks(host, repo, number)
         status, failing, buckets = summarize_checks(checks)
         if not fresh and status == 'failing' and state['head'] not in state['ci_reported']:
             state['ci_reported'].append(state['head'])
@@ -316,9 +329,8 @@ def main():
             return
 
         time.sleep(args.interval)
+        pr, feedback, checks = snapshot(host, repo, number, ignored)
         now = time.time()
-        pr = fetch_pr(host, repo, number)
-        feedback = fetch_feedback(host, repo, number, ignored)
 
 
 if __name__ == '__main__':

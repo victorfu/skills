@@ -9,7 +9,7 @@ description: Audit a whole repository for verified, behavior-affecting bugs and 
 
 Find defects that can actually affect behavior. Review the entire first-party code scope, verify each candidate twice, and report evidence before proposing or making any code change.
 
-Use Traditional Chinese for the report unless the user explicitly requests another language.
+Write the report in the language the user wrote the request in, unless they explicitly ask for another one.
 
 ## Non-negotiable contract
 
@@ -36,7 +36,7 @@ Use Traditional Chinese for the report unless the user explicitly requests anoth
    - Inventory all tracked files plus untracked, non-ignored files in the target working tree.
    - Review every first-party text file that can affect runtime, tests, build, CI, deployment, migrations, schemas, or configuration.
    - Do not stop after finding the first bugs or after tests pass.
-   - Do not claim “全部掃描” unless the coverage ledger is complete.
+   - Do not claim the whole repository was scanned unless the coverage ledger is complete.
    - If a hard tool, permission, context, or time boundary prevents completion, disclose exact reviewed counts and remaining paths. Never silently sample.
 
 5. **No invented environment facts**
@@ -289,7 +289,7 @@ Do not claim exhaustive review when:
 
 Lead with findings, sorted by severity and then confidence. Do not bury confirmed bugs behind a general summary.
 
-Write every sentence of the report in Traditional Chinese, including when the request itself is in English; only an explicit request for another report language changes this. Keep the headings and field labels of the template below as written.
+Write every sentence of the report in the language of the request, including the headings and field labels of the template below, which are given in English; an explicit request for a report language takes precedence.
 
 ```markdown
 # Repository Bug Audit
@@ -331,7 +331,7 @@ Write every sentence of the report in Traditional Chinese, including when the re
 - **Commands not executed:** <reason and consequence for confidence>
 
 ## Result
-<Number of confirmed bugs and potential issues. If none, say “在已完成的覆蓋範圍內，未找到可確認的 Bug”，not “此 repository 沒有 Bug”。>
+<Number of confirmed bugs and potential issues. If none, say that no confirmable bug was found within the completed coverage, not that the repository has no bugs.>
 ```
 
 ## Reporting rules

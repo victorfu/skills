@@ -47,11 +47,11 @@ class PollTests(unittest.TestCase):
     def saved(self):
         return api.load_state(self.path)
 
-    def invoke(self, items, max_wait=0, pr=PR, polls=None):
+    def invoke(self, items, max_wait=0, pr=PR, polls=None, checks=()):
         # polls: one feedback list per fetch, the last repeating, for changes within a single run.
         remaining = list(polls or [])
 
-        def feedback(*_):
+        def feedback(*_, **__):
             if not remaining:
                 return items
             return remaining.pop(0) if len(remaining) > 1 else remaining[0]
@@ -64,7 +64,7 @@ class PollTests(unittest.TestCase):
 
         with patch.object(sys, 'argv', argv), patch.object(api, 'fetch_pr', return_value=pr), \
                 patch.object(api, 'fetch_feedback', side_effect=feedback), \
-                patch.object(api, 'fetch_checks', return_value=[]), \
+                patch.object(api, 'fetch_checks', return_value=list(checks)), \
                 patch.object(api.time, 'time', side_effect=lambda: self.now), \
                 patch.object(api.time, 'sleep', side_effect=sleep), redirect_stdout(io.StringIO()) as output:
             api.main()
@@ -174,6 +174,53 @@ class PollTests(unittest.TestCase):
         self.now = 13
         self.assertEqual(self.invoke([ITEM])['event'], 'feedback')
 
+    def run_with_push_during_checks(self, checks, max_wait=0):
+        # The remote head moves from abc to def after the PR query, before the checks query.
+        remote = dict(PR)
+
+        def push_then_checks(*_):
+            remote['headRefOid'] = 'def'
+            return checks
+
+        argv = ['watch_pr.py', PR['url'], '--state', str(self.path), '--include-self',
+                '--interval', '1', '--max-wait', str(max_wait)]
+        with patch.object(sys, 'argv', argv), \
+                patch.object(api, 'fetch_pr', side_effect=lambda *_: dict(remote)), \
+                patch.object(api, 'fetch_feedback', return_value=[]), \
+                patch.object(api, 'fetch_checks', side_effect=push_then_checks), \
+                patch.object(api.time, 'time', side_effect=lambda: self.now), \
+                redirect_stdout(io.StringIO()) as output:
+            api.main()
+        return json.loads(output.getvalue())
+
+    def test_push_during_a_poll_restarts_quiet_instead_of_reporting_old_head(self):
+        self.now = 1000
+        event = self.run_with_push_during_checks([])
+        self.assertEqual(event['event'], 'waiting')
+        self.assertEqual(event['head'], 'def')
+        self.assertEqual(event['quiet_seconds'], 0)
+        saved = self.saved()
+        self.assertEqual((saved['head'], saved['quiet_since']), ('def', 1000))
+
+    def test_push_during_a_poll_does_not_charge_failing_checks_to_old_head(self):
+        self.now = 1000
+        event = self.run_with_push_during_checks(FAIL)
+        self.assertEqual(event['event'], 'ci_failed')
+        self.assertEqual(event['head'], 'def')
+        self.assertEqual(self.saved()['ci_reported'], ['def'])
+
+    def test_poll_gives_up_when_the_head_keeps_moving(self):
+        heads = iter(range(100))
+        argv = ['watch_pr.py', PR['url'], '--state', str(self.path), '--include-self', '--max-wait', '0']
+        with patch.object(sys, 'argv', argv), \
+                patch.object(api, 'fetch_pr', side_effect=lambda *_: dict(PR, headRefOid=str(next(heads)))), \
+                patch.object(api, 'fetch_feedback', return_value=[]), \
+                patch.object(api, 'fetch_checks', return_value=[]), \
+                redirect_stdout(io.StringIO()) as output, self.assertRaises(api.GhError):
+            api.main()
+        self.assertEqual(output.getvalue(), '')
+        self.assertEqual(self.saved()['head'], 'abc')
+
     def test_disappeared_batch_does_not_leave_an_old_timer(self):
         self.assertEqual(self.invoke([ITEM])['event'], 'waiting')
         self.now = 2
@@ -183,6 +230,21 @@ class PollTests(unittest.TestCase):
         self.assertEqual(self.invoke([ITEM])['event'], 'waiting')
         self.now = 7
         self.assertEqual(self.invoke([ITEM])['event'], 'feedback')
+
+    def test_baseline_ci_failure_is_not_reported_again_for_the_same_head(self):
+        self.path.unlink()
+        event = self.invoke([], checks=FAIL)
+        self.assertEqual((event['event'], event['ci']), ('baseline', 'failing'))
+        self.assertEqual(self.saved()['ci_reported'], ['abc'])
+        self.assertEqual(self.invoke([], checks=FAIL)['event'], 'waiting')
+        event = self.invoke([], checks=FAIL, pr=dict(PR, headRefOid='def'))
+        self.assertEqual((event['event'], event['head']), ('ci_failed', 'def'))
+
+    def test_baseline_without_ci_failure_leaves_the_head_reportable(self):
+        self.path.unlink()
+        self.assertEqual(self.invoke([])['ci'], 'none')
+        self.assertEqual(self.saved()['ci_reported'], [])
+        self.assertEqual(self.invoke([], checks=FAIL)['event'], 'ci_failed')
 
 
 class HybridTests(unittest.TestCase):
