@@ -26,9 +26,9 @@ def upgrade_seen(seen, items, current):
             seen[key] = current[key]
 
 
-def snapshot(host, repo, number, ignored):
+def snapshot(host, repo, number, ignored, self_login=None):
     # Keep full bodies for versioning; emitted excerpts remain bounded.
-    return api.snapshot(host, repo, number, ignored, full=True)
+    return api.snapshot(host, repo, number, ignored, full=True, self_login=self_login)
 
 
 def read_signal(path):
@@ -142,14 +142,15 @@ def run(args):
             raise ValueError('Cannot acknowledge missing state')
         acknowledge(state, args.ack, time.time())
         api.save_state(path, state)
+    self_login = api.current_login(host)
     ignored = {name.lower() for name in args.ignore_author}
-    if not args.include_self:
-        ignored.add(api.gh('api', '--hostname', host, 'user', '--jq', '.login').strip().lower())
+    if args.ignore_self:
+        ignored.add(self_login)
     started = time.monotonic()
     while True:
         # Sample generation BEFORE fetching: a notification during fetch triggers another refresh.
         generation, active = signal_status(signal, target, time.time())
-        pr, items, checks = snapshot(host, repo, number, ignored)
+        pr, items, checks = snapshot(host, repo, number, ignored, self_login)
         now = time.time()
         status, failing, buckets = api.summarize_checks(checks)
         if state is None:
@@ -161,7 +162,8 @@ def run(args):
             else:
                 event = stage(state, dict(event='baseline', url=pr['url'], head=pr['headRefOid'],
                               pr_state=pr['state'], existing_feedback=len(items), ci=status,
-                              failing_checks=failing, ignored_authors=sorted(ignored)),
+                              failing_checks=failing, ignored_authors=sorted(ignored),
+                              self_login=self_login),
                               versions(items), pr['headRefOid'] if status == 'failing' else None)
         else:
             event = evaluate(state, pr, items, checks, now, args.quiet, args.settle)

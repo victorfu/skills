@@ -5,7 +5,8 @@
   "platform": "claude",
   "sha256": {
     "skills/address-review-feedback/LICENSE": "a37e0e9697144819e1d965176ac4ae5bc3fa02d11e7812036bbcadf6dafe2400",
-    "skills/address-review-feedback/SKILL.md": "2c5973c58b3222cc98c7d050ce90583e246d708beb68c940466ee8de90e60af3",
+    "skills/address-review-feedback/SKILL.md": "de78b37e453fc765abb0e19e4ef6dd58684782f6d4199bc22694e257bf3de234",
+    "skills/address-review-feedback/scripts/post_reply.py": "116360204574d9d7d3ef34d35acc93514c9d7823ec8017bc6b8a7695d10610a4",
     "skills/audit-repository/SKILL.md": "243e7fbdacccb329c7192284311e045b59bdd0ea439421ed9db6309b6d4c16c1",
     "skills/audit-repository/assets/icon.svg": "8936b24f674a1250d999e2c2b5901374fb4240426f32bd1ae340c352a90d617d",
     "skills/audit-repository/scripts/repo_inventory.py": "e1e0af866f879ffe3234952ca33ad1eb50c560a84a5b49f228aec067d788f58d",
@@ -13,10 +14,10 @@
     "skills/resolve-github-issue/references/auto-fix.md": "21881697622fa56790d78259cd810fd0e729c04da9255a396ed823e551d0d941",
     "skills/resolve-github-issue/references/github-workflow.md": "a26fa99fa06654009ff1df730e0efc1a2f3e8a44730ccf798c7e3281f82db6c2",
     "skills/resolve-github-issue/references/reproduction.md": "ee82d4eb26ab53d4bcccba71c3d2c92889ac1a10ecbe749627d06d7b1fceda1d",
-    "skills/watch-pr-feedback/SKILL.md": "cdd1427cab619f94057f7ac4eab51f7b5ab6a1426a4cac640526e75130140e9d",
+    "skills/watch-pr-feedback/SKILL.md": "4344ecf1a9e4b07b25c56e04c74bf97f949e0f15fc7856327bdf4600868bebcf",
     "skills/watch-pr-feedback/references/hybrid.md": "324a427397d83799329488f82d16d76634b94de08d65e2f9447c0d679bb6b8d3",
-    "skills/watch-pr-feedback/scripts/hybrid_watch.py": "f96b5d1b40e72d80864e71caaa02344cbf297fb841dbf6118f6110a3c1142c39",
-    "skills/watch-pr-feedback/scripts/watch_pr.py": "ebe5a15f205ae09b67b627ca28fb181e844484bb4abc3450e66e50ef3fc94517",
+    "skills/watch-pr-feedback/scripts/hybrid_watch.py": "2291d43afb0642422ffa356fc202231ac8ec5132d1f9396bca7516ef69e72869",
+    "skills/watch-pr-feedback/scripts/watch_pr.py": "691524a030d18f0e4c6654ebe4adbdc8b678efa7f7711b33134be743682abcd9",
     "skills/watch-pr-feedback/scripts/webhook_receiver.py": "3cb9e6b2a85ab391190e51b19e3aa012e169c0d55c55ee3a1ef2a87e364591b6"
   }
 }

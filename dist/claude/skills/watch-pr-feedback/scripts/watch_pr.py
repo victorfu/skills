@@ -31,6 +31,9 @@ import time
 PR_URL = re.compile(r'https://([^/\s]+)/([^/\s]+)/([^/\s]+)/pull/(\d+)/?(?:[?#].*)?$')
 EXCERPT = 300
 REPLACE_ATTEMPTS = 20
+# address-review-feedback appends this to every reply it publishes. A comment from the
+# authenticated account that carries it is this workflow's own reply, not feedback.
+AGENT_MARKER = '<!-- devflow:agent-reply -->'
 
 
 @contextmanager
@@ -98,7 +101,17 @@ def parse_target(args):
     return args.host, args.repo, int(args.pr.lstrip('#'))
 
 
-def fetch_feedback(host, repo, number, ignored, full=False):
+def current_login(host):
+    return gh('api', '--hostname', host, 'user', '--jq', '.login').strip().lower()
+
+
+def is_own_reply(item, self_login):
+    # Both conditions: the marker alone must never hide another person's feedback.
+    return (bool(self_login) and (item.get('user') or '').lower() == self_login
+            and AGENT_MARKER in (item.get('body') or ''))
+
+
+def fetch_feedback(host, repo, number, ignored, full=False, self_login=None):
     items = []
     base = f'repos/{repo}'
     for c in gh_lines(f'{base}/pulls/{number}/comments?per_page=100',
@@ -114,7 +127,7 @@ def fetch_feedback(host, repo, number, ignored, full=False):
         items.append({'key': f"issue_comment:{c['id']}", 'kind': 'issue_comment', **c})
     kept = []
     for item in items:
-        if (item.get('user') or '').lower() in ignored:
+        if (item.get('user') or '').lower() in ignored or is_own_reply(item, self_login):
             continue
         if not full:
             item['body'] = excerpt(item.get('body'))
@@ -147,11 +160,11 @@ def fetch_checks(host, repo, number):
     raise GhError(f'gh pr checks failed ({result.returncode}): {detail}')
 
 
-def snapshot(host, repo, number, ignored, full=False):
+def snapshot(host, repo, number, ignored, full=False, self_login=None):
     """Query PR, feedback and checks, retrying until the head is the same before and after."""
     for _ in range(3):
         pr = fetch_pr(host, repo, number)
-        items = fetch_feedback(host, repo, number, ignored, full=full)
+        items = fetch_feedback(host, repo, number, ignored, full=full, self_login=self_login)
         checks = fetch_checks(host, repo, number)
         latest = fetch_pr(host, repo, number)
         if pr['headRefOid'] == latest['headRefOid'] and pr['state'] == latest['state']:
@@ -233,7 +246,10 @@ def main():
     parser.add_argument('--settle', type=int, default=60, help='seconds to keep collecting after new feedback (default 60)')
     parser.add_argument('--max-wait', type=int, default=540, help='seconds before this run returns "waiting" (default 540)')
     parser.add_argument('--ignore-author', action='append', default=[], help='login whose comments are ignored; repeatable')
-    parser.add_argument('--include-self', action='store_true', help='do not ignore comments by the authenticated gh user')
+    parser.add_argument('--ignore-self', action='store_true',
+                        help='ignore every comment by the authenticated gh user, not only marked agent replies')
+    # Accepted for old command lines: the user's own comments are now included by default.
+    parser.add_argument('--include-self', action='store_true', help=argparse.SUPPRESS)
     parser.add_argument('--mode', choices=('poll', 'hybrid'), default='poll')
     parser.add_argument('--signal', help='receiver heartbeat/wakeup file (hybrid)')
     parser.add_argument('--reconcile', type=int, default=300, help='hybrid full refresh interval')
@@ -257,13 +273,14 @@ def main():
     state = load_state(state_path)
     if state and state.get('mode') == 'hybrid':
         raise ValueError('Hybrid state requires --mode hybrid and --signal')
+    self_login = current_login(host)
     ignored = {login.lower() for login in args.ignore_author}
-    if not args.include_self:
-        ignored.add(gh('api', '--hostname', host, 'user', '--jq', '.login').strip().lower())
+    if args.ignore_self:
+        ignored.add(self_login)
     target = {'host': host, 'repo': repo, 'pr': number}
 
     # One consistent snapshot per poll: checks from a newer head must not be judged against an older one.
-    pr, feedback, checks = snapshot(host, repo, number, ignored)
+    pr, feedback, checks = snapshot(host, repo, number, ignored, self_login=self_login)
     now = time.time()
     if state is None or state.get('target') != target:
         status, failing, _ = summarize_checks(checks)
@@ -272,7 +289,8 @@ def main():
                                 'head': pr['headRefOid'], 'quiet_since': now,
                                 'ci_reported': [pr['headRefOid']] if status == 'failing' else []})
         emit('baseline', url=pr['url'], pr_state=pr['state'], head=pr['headRefOid'], mergeable=pr.get('mergeable'),
-             existing_feedback=len(feedback), ci=status, failing_checks=failing, ignored_authors=sorted(ignored))
+             existing_feedback=len(feedback), ci=status, failing_checks=failing, ignored_authors=sorted(ignored),
+             self_login=self_login)
         return
 
     started = now
@@ -329,7 +347,7 @@ def main():
             return
 
         time.sleep(args.interval)
-        pr, feedback, checks = snapshot(host, repo, number, ignored)
+        pr, feedback, checks = snapshot(host, repo, number, ignored, self_login=self_login)
         now = time.time()
 
 
