@@ -2,7 +2,7 @@
 
 Behavior changes to the skills and the plugin package, newest first. These skills commit, push and post on your behalf, so read the entries between your installed version and the new one before updating. Docs-only and CI-only changes are left out.
 
-## Unreleased
+## 0.8.0 (2026-11-11)
 
 - `watch-pr-feedback` poll mode re-reads the PR head after each query and retries when someone pushed mid-query, so a push no longer lets it report `quiet` or `ci_failed` for the previous head and stop watching the new commits.
 - `watch-pr-feedback` counts a CI failure reported in a poll-mode `baseline` as that head's one report, so an unchanged head (for example after a local-only fix) no longer triggers a second `ci_failed` round.

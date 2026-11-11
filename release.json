@@ -2,7 +2,7 @@
   "name": "devflow",
   "displayName": "DevFlow",
   "marketplace": "victorfu-skills",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "Shared development workflow skills; each skill runs only under its explicit invocation contract.",
   "author": {
     "name": "Victor"
