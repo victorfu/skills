@@ -14,8 +14,8 @@
     "skills/resolve-github-issue/references/auto-fix.md": "21881697622fa56790d78259cd810fd0e729c04da9255a396ed823e551d0d941",
     "skills/resolve-github-issue/references/github-workflow.md": "a26fa99fa06654009ff1df730e0efc1a2f3e8a44730ccf798c7e3281f82db6c2",
     "skills/resolve-github-issue/references/reproduction.md": "ee82d4eb26ab53d4bcccba71c3d2c92889ac1a10ecbe749627d06d7b1fceda1d",
-    "skills/watch-pr-feedback/SKILL.md": "8147f4fcdd31749907b82930b353e3c8f513fbe06bf8584addb1ff247aa57859",
-    "skills/watch-pr-feedback/references/hybrid.md": "404ca6d2ad6570270b55230a74269053d9d5496f348074c26d7f061f262ac0e6",
+    "skills/watch-pr-feedback/SKILL.md": "116afe997dd084bce2a127fed15dc6a9cacdfd34e4da1a6b5d09befdaa9c5f13",
+    "skills/watch-pr-feedback/references/hybrid.md": "d4f85f926133a2fd14bc732e98b20d24b8845784962c1c89841703016b08fb56",
     "skills/watch-pr-feedback/scripts/hybrid_watch.py": "2291d43afb0642422ffa356fc202231ac8ec5132d1f9396bca7516ef69e72869",
     "skills/watch-pr-feedback/scripts/watch_pr.py": "691524a030d18f0e4c6654ebe4adbdc8b678efa7f7711b33134be743682abcd9",
     "skills/watch-pr-feedback/scripts/webhook_receiver.py": "3cb9e6b2a85ab391190e51b19e3aa012e169c0d55c55ee3a1ef2a87e364591b6"

@@ -4,7 +4,7 @@ Behavior changes to the skills and the plugin package, newest first. These skill
 
 ## Unreleased
 
-- **Default changed:** `watch-pr-feedback` now selects hybrid mode, using local webhook wakeups with 5-minute reconciliation and 60-second polling fallback when forwarding is unavailable. Explicit poll or no-webhook requests skip receiver setup and extension installation. The standalone Python helper keeps its legacy polling default; the skill passes the mode explicitly.
+- **Default changed:** `watch-pr-feedback` now selects hybrid mode, using local webhook wakeups with 5-minute reconciliation and 60-second polling fallback when forwarding is unavailable. This starts a temporary repository webhook forwarding session and stops the owned receiver/forwarder on exit; it requires webhook access and an installed `cli/gh-webhook` extension. A missing extension uses polling fallback and is installed only with explicit authorization. Ask for `poll` mode or no webhook setup to keep the old behavior and skip receiver setup. The standalone Python helper keeps its legacy polling default; the skill passes the mode explicitly.
 
 ## 0.9.0 (2026-11-11)
 
