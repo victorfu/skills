@@ -19,7 +19,7 @@ Watch one PR and run address-review-feedback for each new batch of review feedba
 1. Resolve and verify the PR: host, owner/repo, number, state, head repo/branch and head SHA. Stop if it is closed or merged. Confirm that the local checkout (or a dedicated worktree) tracks the PR head branch and has no unrelated uncommitted work; address-review-feedback rules for preserving work apply.
 2. Load the address-review-feedback workflow from the same plugin: it is the sibling skill directory, `../address-review-feedback/SKILL.md` relative to this file. It is restricted to explicit invocation, so read that file and follow it rather than relying on the client to auto-load it. If it is not installed, stop and tell the user.
 3. Settle the parameters, using the user's values when given:
-   - mode: `poll` (default, unchanged); use `hybrid` when requested, with webhook wakeups and 5-minute reconciliation
+   - mode: `hybrid` (default), with webhook wakeups and 5-minute reconciliation; use `poll` when requested or when the user forbids webhook setup
    - poll interval: 60 seconds (also the hybrid fallback when the receiver is unavailable)
    - quiet window: 10 minutes with no new feedback after the last push or handled event, with no CI pending
    - settle time: 60 seconds after new feedback, so one review's comments are handled together
@@ -29,12 +29,12 @@ Watch one PR and run address-review-feedback for each new batch of review feedba
 
 ## 2. Wait with the helper script
 
-For hybrid mode, read [references/hybrid.md](references/hybrid.md) first. It describes the local `gh webhook forward` receiver, separate state files, acknowledged batches, fallback and shutdown. The same address-round and stop rules below apply to both modes. Keep poll as the default; do not silently provision a webhook or install an extension for a poll watch.
+For the default hybrid mode, read and follow [references/hybrid.md](references/hybrid.md) first: start the local `gh webhook forward` receiver, then invoke the helper with `--mode hybrid`, separate state and signal files, and acknowledge completed batches. It also covers polling fallback and receiver shutdown. Report unavailable forwarding and continue with that fallback; do not require the user to request hybrid separately. For an explicitly requested poll watch, skip receiver setup and extension installation. The same address-round and stop rules below apply to both modes.
 
-Use [scripts/watch_pr.py](scripts/watch_pr.py) (Python 3 standard library plus gh). It polls the PR's review comments, reviews with a body or a changes-requested verdict, PR conversation comments and `gh pr checks` for the current head, then prints one JSON event and exits:
+Use [scripts/watch_pr.py](scripts/watch_pr.py) (Python 3 standard library plus gh). It queries the PR's review comments, reviews with a body or a changes-requested verdict, PR conversation comments and `gh pr checks` for the current head, then prints one JSON event and exits. Use the hybrid commands in the reference by default. Only for poll mode, use:
 
 ```
-python3 <skill-dir>/scripts/watch_pr.py <PR URL> --state <state file> \
+python3 <skill-dir>/scripts/watch_pr.py <PR URL> --mode poll --state <state file> \
   [--interval 60] [--quiet 600] [--settle 60] [--max-wait 540] [--ignore-author LOGIN]
 ```
 

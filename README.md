@@ -127,14 +127,14 @@ The skill's package is checked locally; full client invocation remains unverifie
 
 ### Watching a PR until feedback stops
 
-Use `watch-pr-feedback` with a PR URL. It polls the PR with `gh` (every 60 seconds by default) and, for each new batch of review comments, reviews, PR conversation comments or failing CI on the head SHA, runs the full `address-review-feedback` workflow. It stops when nothing new arrives for a 10-minute quiet window with no CI pending, the PR closes, or it reaches 10 rounds or 4 hours.
+Use `watch-pr-feedback` with a PR URL. It watches the PR with `gh` (hybrid mode by default) and, for each new batch of review comments, reviews, PR conversation comments or failing CI on the head SHA, runs the full `address-review-feedback` workflow. It stops when nothing new arrives for a 10-minute quiet window with no CI pending, the PR closes, or it reaches 10 rounds or 4 hours.
 
 ```text
 /devflow:watch-pr-feedback https://github.com/OWNER/REPO/pull/123
-$devflow:watch-pr-feedback https://github.com/OWNER/REPO/pull/123 Poll every 2 minutes, stop after 1 hour, do not post replies.
+$devflow:watch-pr-feedback https://github.com/OWNER/REPO/pull/123 Use poll mode every 2 minutes, stop after 1 hour, do not post replies.
 ```
 
-Optional `hybrid` mode uses a local `gh webhook forward` receiver to wake the helper, with full reconciliation every 5 minutes and 60-second polling fallback when the receiver is unavailable. It persists settling and unacknowledged batches for restart recovery. Ask for hybrid explicitly; poll remains the default. See [hybrid setup and lifecycle](skills/watch-pr-feedback/references/hybrid.md). The forwarding extension is for local development/testing, not production hosting.
+Default `hybrid` mode uses a local `gh webhook forward` receiver to wake the helper, with full reconciliation every 5 minutes and 60-second polling fallback when the receiver is unavailable. It persists settling and unacknowledged batches for restart recovery. Ask for `poll` mode or no webhook setup to skip the receiver and extension installation. See [hybrid setup and lifecycle](skills/watch-pr-feedback/references/hybrid.md). The forwarding extension is for local development/testing, not production hosting.
 
 Comments you post with your own `gh` account count as feedback, so you can review your own PR with it. Replies the workflow posts carry a hidden `<!-- devflow:agent-reply -->` marker and are skipped, so they do not trigger new rounds; ask it to ignore your account entirely to get the old behavior. Limits you give apply to every round. It never merges, force-pushes or re-runs CI. The packaged polling script was tested against a real merged PR and with mocked events; a full live watch remains unverified.
 

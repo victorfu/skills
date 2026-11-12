@@ -2,6 +2,10 @@
 
 Behavior changes to the skills and the plugin package, newest first. These skills commit, push and post on your behalf, so read the entries between your installed version and the new one before updating. Docs-only and CI-only changes are left out.
 
+## Unreleased
+
+- **Default changed:** `watch-pr-feedback` now selects hybrid mode, using local webhook wakeups with 5-minute reconciliation and 60-second polling fallback when forwarding is unavailable. Explicit poll or no-webhook requests skip receiver setup and extension installation. The standalone Python helper keeps its legacy polling default; the skill passes the mode explicitly.
+
 ## 0.9.0 (2026-11-11)
 
 - **Default changed:** `watch-pr-feedback` now treats comments from your own `gh` account as feedback, so reviewing your own PR with that account starts a round. It skips only replies carrying the hidden `<!-- devflow:agent-reply -->` marker. Ask it to ignore your account (`--ignore-self`) to get the old behavior.

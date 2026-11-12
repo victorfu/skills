@@ -127,14 +127,14 @@ PR head 上失敗的 CI checks 也會當作待處理的意見，即使沒有任�
 
 ### 持續監看 PR 直到沒有新意見
 
-叫用 `watch-pr-feedback` 並提供 PR 網址。它用 `gh` 輪詢 PR（預設每 60 秒），每當 head SHA 出現新的 review comments、reviews、PR 對話留言或 CI 失敗，就執行完整的 `address-review-feedback` 流程。在 10 分鐘的安靜期內沒有新意見且沒有 CI 尚在執行、PR 關閉，或達到 10 輪／4 小時上限時停止。
+叫用 `watch-pr-feedback` 並提供 PR 網址。它用 `gh` 監看 PR（預設 hybrid 模式），每當 head SHA 出現新的 review comments、reviews、PR 對話留言或 CI 失敗，就執行完整的 `address-review-feedback` 流程。在 10 分鐘的安靜期內沒有新意見且沒有 CI 尚在執行、PR 關閉，或達到 10 輪／4 小時上限時停止。
 
 ```text
 /devflow:watch-pr-feedback https://github.com/OWNER/REPO/pull/123
-$devflow:watch-pr-feedback https://github.com/OWNER/REPO/pull/123 每 2 分鐘檢查一次，1 小時後停止，不要回覆留言。
+$devflow:watch-pr-feedback https://github.com/OWNER/REPO/pull/123 使用 poll 模式，每 2 分鐘檢查一次，1 小時後停止，不要回覆留言。
 ```
 
-可明確指定 `hybrid` 模式：使用本機 `gh webhook forward` 接收事件喚醒 helper，每 5 分鐘完整補查；接收器不可用時退回每 60 秒輪詢。評論合併等待與未確認批次會持久保存，支援中斷後復原。預設仍是 poll；設定與停止步驟見 [hybrid 操作說明](skills/watch-pr-feedback/references/hybrid.md)。此轉送方式適用本機開發與測試，不是正式環境 webhook hosting。
+預設使用 `hybrid` 模式：使用本機 `gh webhook forward` 接收事件喚醒 helper，每 5 分鐘完整補查；接收器不可用時退回每 60 秒輪詢。評論合併等待與未確認批次會持久保存，支援中斷後復原。明確指定 `poll` 模式或不要設定 webhook 時，會跳過接收器設定與 extension 安裝。設定與停止步驟見 [hybrid 操作說明](skills/watch-pr-feedback/references/hybrid.md)。此轉送方式適用本機開發與測試，不是正式環境 webhook hosting。
 
 你用自己 `gh` 帳號留的意見也會觸發新一輪，所以可以用同一個帳號 review 自己的 PR。workflow 發出的回覆帶有隱藏標記 `<!-- devflow:agent-reply -->` 並會被略過，不會再觸發新一輪；若要沿用舊行為，可要求它完全忽略你的帳號。你指定的限制會套用到每一輪。它不會 merge、force push 或重新執行 CI。輪詢腳本已對實際已合併的 PR 及模擬事件測試；完整的實際監看流程尚未驗證。
 
