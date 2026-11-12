@@ -4,7 +4,7 @@ Use for the skill's default hybrid mode unless the user requests poll or forbids
 
 ## Start the receiver
 
-Verify `gh webhook forward --help`. If the extension is missing, report that and use polling fallback without installing it. Install with `gh extension install cli/gh-webhook` only when the user explicitly authorizes installation; environment permissions still apply. Use a fresh private scratch directory per watch, outside the repository. Keep the same paths throughout the session. Do not reuse a poll state file for hybrid or run multiple consumers for one state file.
+Verify `gh webhook forward --help`. If the extension is missing, use polling fallback without installing it, and tell the user so when the watch starts: say that this watch is polling because the `cli/gh-webhook` extension is not installed, and that running `gh extension install cli/gh-webhook` and starting the watch again enables hybrid webhook wakeups. Say it once, not every round, and do not wait for an answer. Install it yourself only when the user explicitly authorizes installation; environment permissions still apply. Use a fresh private scratch directory per watch, outside the repository. Keep the same paths throughout the session. Do not reuse a poll state file for hybrid or run multiple consumers for one state file.
 
 If the client cannot keep a managed background process, skip the receiver and report polling fallback; do not run the long-lived receiver in the foreground. Otherwise run it in a managed background command, keeping its process/session handle so it can be stopped. On Windows, if using `Start-Process`, use `-WindowStyle Hidden`. Commands below use `python3`; on Windows use `py -3` or a verified Python 3 `python` executable if needed.
 
