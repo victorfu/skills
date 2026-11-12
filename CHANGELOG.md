@@ -2,7 +2,7 @@
 
 Behavior changes to the skills and the plugin package, newest first. These skills commit, push and post on your behalf, so read the entries between your installed version and the new one before updating. Docs-only and CI-only changes are left out.
 
-## Unreleased
+## 0.10.1 (2026-11-12)
 
 - `watch-pr-feedback` now tells you, once at the start of the watch, when it is polling because the `cli/gh-webhook` extension is not installed, and that running `gh extension install cli/gh-webhook` and starting the watch again enables hybrid webhook wakeups. It still does not install the extension without explicit authorization.
 
