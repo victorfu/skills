@@ -30,7 +30,7 @@ Watch one PR and run address-review-feedback for each new batch of review feedba
 
 ## 2. Wait with the helper script
 
-For the default hybrid mode, read and follow [references/hybrid.md](references/hybrid.md) first: start the local `gh webhook forward` receiver, then invoke the helper with `--mode hybrid`, distinct `--state` and `--signal` files, and acknowledge completed batches. It also covers polling fallback and receiver shutdown. If forwarding is unavailable, report the reason and keep running the same `--mode hybrid` command with the same state and signal paths; the helper then polls every 60 seconds (or the configured interval). Do not switch to `--mode poll` mid-watch. For an explicitly requested poll watch, skip receiver setup and extension installation. The same address-round and stop rules below apply to both modes.
+For the default hybrid mode, read and follow [references/hybrid.md](references/hybrid.md) first: start the local `gh webhook forward` receiver, then invoke the helper with `--mode hybrid`, distinct `--state` and `--signal` files, and acknowledge completed batches. It also covers polling fallback and receiver shutdown. If forwarding is unavailable, report the reason and keep running the same `--mode hybrid` command with the same state and signal paths; the helper then polls every 60 seconds (or the configured interval). Do not switch to `--mode poll` mid-watch. For an explicitly requested poll watch, skip receiver setup. The same address-round and stop rules below apply to both modes.
 
 Use [scripts/watch_pr.py](scripts/watch_pr.py) (Python 3 standard library plus gh). It queries the PR's review comments, reviews with a body or a changes-requested verdict, PR conversation comments and `gh pr checks` for the current head, then prints one JSON event and exits. Use the hybrid commands in the reference by default. Only for poll mode, use:
 
@@ -52,7 +52,7 @@ Comments by the authenticated gh user count as feedback, because users often rev
 | `quiet` | Finish (section 4). |
 | `closed` | Stop; the PR was merged or closed. |
 
-If the script fails (exit 1), read its stderr. Retry transient network or rate-limit errors after one interval, at most three times in a row; otherwise stop and report. If Python is unavailable, hybrid is not possible: report that this is a manual poll watch, poll the same endpoints with gh directly and apply the same rules: track seen IDs, skip comments from your own account that carry the agent-reply marker, restart the quiet window on each push, re-read the head after querying checks and start over if it changed, report CI failure once per head SHA.
+If the script fails (exit 1), read its stderr. Retry transient network or rate-limit errors after one interval, at most three times in a row; otherwise stop and report. If Python is unavailable, hybrid is not possible. Report that this is a manual poll watch, then poll the same endpoints with gh directly and apply the same rules: track seen IDs, skip comments from your own account that carry the agent-reply marker, restart the quiet window on each push, re-read the head after querying checks and start over if it changed, report CI failure once per head SHA.
 
 ## 3. Run an address round
 
