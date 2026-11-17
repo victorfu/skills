@@ -2,6 +2,14 @@
 
 Behavior changes to the skills and the plugin package, newest first. These skills commit, push and post on your behalf, so read the entries between your installed version and the new one before updating. Docs-only and CI-only changes are left out.
 
+## Unreleased
+
+- **Default changed:** `watch-pr-feedback` now marks review threads as resolved after a round, when the pushed commit demonstrably fixes the concern (or the concern was already fixed) and the reply saying so was published. Rejected, needs-info, partially addressed and blocked threads stay open. Say "do not resolve threads" to keep the old behavior. `address-review-feedback` on its own still resolves threads only on request; it gains a `resolve_thread.py` helper for that.
+- **Default changed:** `watch-pr-feedback` now reacts to merge conflicts. The helper emits a new `conflict` event (once per head and base SHA pair, before `ci_failed`), and the round merges the base branch into the PR head branch with an ordinary merge commit and pushes it. It resolves only hunks where both sides' intent is clear and the build and tests pass; otherwise it aborts the merge, leaves the branch untouched and stops to ask. It still never rebases, force-pushes or merges the PR. Say "do not merge the base" to keep the old behavior.
+- `watch-pr-feedback` no longer reports `quiet` while GitHub is still computing mergeability; `baseline`, `waiting` and `quiet` events now carry `mergeable`.
+- `watch-pr-feedback` reads CI failure logs: failing GitHub Actions checks in an event carry `run_id` and `job_id`, and a new `ci_logs.py` helper prints the end of the failed-step logs per job.
+- The hybrid receiver accepts `--base <branch>` and then also wakes for pushes to the PR's base branch.
+
 ## 0.10.1 (2026-11-12)
 
 - `watch-pr-feedback` now tells you, once at the start of the watch, when it is polling because the `cli/gh-webhook` extension is not installed, and that running `gh extension install cli/gh-webhook` and starting the watch again enables hybrid webhook wakeups. It still does not install the extension without explicit authorization.

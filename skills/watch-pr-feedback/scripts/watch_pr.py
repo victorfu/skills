@@ -7,9 +7,11 @@ webhook signals, reconciles periodically and requires --ack for delivered batche
 
   baseline  First run: inspect existing feedback (hybrid requires acknowledgment).
   feedback  New review comments, reviews or PR conversation comments appeared.
+  conflict  The PR conflicts with its base branch (reported once per head and base SHA pair).
   ci_failed CI finished on the current head SHA with failing checks (reported once per SHA).
   quiet     No new feedback for --quiet seconds since the last head change or event,
-            and no CI check on the current head is pending; reports the CI status.
+            no CI check on the current head is pending and mergeability is known;
+            reports the CI status and mergeability.
   closed    The PR is no longer open.
   waiting   --max-wait elapsed first; run again with the same state file to continue.
 
@@ -34,6 +36,7 @@ REPLACE_ATTEMPTS = 20
 # address-review-feedback appends this to every reply it publishes. A comment from the
 # authenticated account that carries it is this workflow's own reply, not feedback.
 AGENT_MARKER = '<!-- devflow:agent-reply -->'
+ACTIONS_JOB = re.compile(r'/actions/runs/(\d+)(?:/job/(\d+))?')
 
 
 @contextmanager
@@ -136,7 +139,8 @@ def fetch_feedback(host, repo, number, ignored, full=False, self_login=None):
 
 
 def fetch_pr(host, repo, number):
-    out = gh('pr', 'view', str(number), '--repo', f'{host}/{repo}', '--json', 'state,headRefOid,url,mergeable')
+    out = gh('pr', 'view', str(number), '--repo', f'{host}/{repo}', '--json',
+             'state,headRefOid,url,mergeable,baseRefName,baseRefOid')
     return json.loads(out)
 
 
@@ -172,11 +176,36 @@ def snapshot(host, repo, number, ignored, full=False, self_login=None):
     raise GhError('PR head changed repeatedly during refresh; retry')
 
 
+def conflict_key(pr):
+    """Identify a conflict by the two commits that conflict, or None when there is none.
+
+    UNKNOWN (GitHub is still computing) is not a conflict; callers hold back quiet instead.
+    """
+    if pr.get('mergeable') != 'CONFLICTING':
+        return None
+    return f"{pr['headRefOid']}:{pr.get('baseRefOid') or ''}"
+
+
+def merge_fields(pr):
+    return {'mergeable': pr.get('mergeable'), 'base': pr.get('baseRefName'), 'base_sha': pr.get('baseRefOid')}
+
+
+def with_job_ids(check):
+    # A GitHub Actions check links to its job; ci_logs.py needs these ids to fetch the log.
+    match = ACTIONS_JOB.search(check.get('link') or '')
+    if not match:
+        return check
+    ids = {'run_id': match.group(1)}
+    if match.group(2):
+        ids['job_id'] = match.group(2)
+    return {**check, **ids}
+
+
 def summarize_checks(checks):
     buckets = {}
     for check in checks:
         buckets.setdefault(check.get('bucket') or 'unknown', []).append(check)
-    failing = buckets.get('fail', []) + buckets.get('cancel', [])
+    failing = [with_job_ids(check) for check in buckets.get('fail', []) + buckets.get('cancel', [])]
     status = 'none' if not checks else 'pending' if buckets.get('pending') else 'failing' if failing else 'passing'
     return status, failing, buckets
 
@@ -285,10 +314,13 @@ def main():
     if state is None or state.get('target') != target:
         status, failing, _ = summarize_checks(checks)
         # Baseline hands a failing head to an address round, so it counts as that head's one CI report.
+        # The same holds for a head that already conflicts with its base.
+        conflict = conflict_key(pr)
         save_state(state_path, {'target': target, 'seen': sorted(i['key'] for i in feedback),
                                 'head': pr['headRefOid'], 'quiet_since': now,
-                                'ci_reported': [pr['headRefOid']] if status == 'failing' else []})
-        emit('baseline', url=pr['url'], pr_state=pr['state'], head=pr['headRefOid'], mergeable=pr.get('mergeable'),
+                                'ci_reported': [pr['headRefOid']] if status == 'failing' else [],
+                                'conflict_reported': [conflict] if conflict else []})
+        emit('baseline', url=pr['url'], pr_state=pr['state'], head=pr['headRefOid'], **merge_fields(pr),
              existing_feedback=len(feedback), ci=status, failing_checks=failing, ignored_authors=sorted(ignored),
              self_login=self_login)
         return
@@ -329,6 +361,16 @@ def main():
         elif state.pop('poll_settling', None) is not None:
             save_state(state_path, state)
 
+        # Before CI: a conflicting PR often has no CI run, and merging the base changes what CI tests.
+        conflict = conflict_key(pr)
+        # State files from before conflict events have no such list.
+        if not fresh and conflict and conflict not in state.setdefault('conflict_reported', []):
+            state['conflict_reported'].append(conflict)
+            state['quiet_since'] = now
+            save_state(state_path, state)
+            emit('conflict', url=pr['url'], head=pr['headRefOid'], **merge_fields(pr))
+            return
+
         status, failing, buckets = summarize_checks(checks)
         if not fresh and status == 'failing' and state['head'] not in state['ci_reported']:
             state['ci_reported'].append(state['head'])
@@ -336,12 +378,14 @@ def main():
             save_state(state_path, state)
             emit('ci_failed', url=pr['url'], head=pr['headRefOid'], failing_checks=failing)
             return
-        if not fresh and status != 'pending' and now - state['quiet_since'] >= args.quiet:
+        # An unknown mergeability may still turn into a conflict; do not finish on it.
+        if (not fresh and status != 'pending' and pr.get('mergeable') != 'UNKNOWN'
+                and now - state['quiet_since'] >= args.quiet):
             emit('quiet', url=pr['url'], head=pr['headRefOid'], ci=status, failing_checks=failing,
-                 quiet_seconds=int(now - state['quiet_since']))
+                 mergeable=pr.get('mergeable'), quiet_seconds=int(now - state['quiet_since']))
             return
         if now - started >= args.max_wait:
-            emit('waiting', url=pr['url'], head=pr['headRefOid'], ci=status,
+            emit('waiting', url=pr['url'], head=pr['headRefOid'], ci=status, mergeable=pr.get('mergeable'),
                  pending_checks=[c['name'] for c in buckets.get('pending', [])],
                  quiet_seconds=int(now - state['quiet_since']), unsettled_feedback=len(fresh))
             return

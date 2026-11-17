@@ -716,5 +716,228 @@ class OwnReplyTests(unittest.TestCase):
             self.assertEqual(seen, {'ignored': expected, 'self_login': 'me'})
 
 
+CONFLICT = dict(PR, mergeable='CONFLICTING', baseRefName='main', baseRefOid='b1')
+
+
+class ConflictTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.path = Path(self.temp.name) / 'state.json'
+        self.now = 0
+
+    def poll(self, pr, items=(), checks=(), quiet=600):
+        argv = ['watch_pr.py', PR['url'], '--state', str(self.path), '--settle', '0',
+                '--quiet', str(quiet), '--max-wait', '0']
+        with patch.object(sys, 'argv', argv), patch.object(api, 'fetch_pr', return_value=pr), \
+                patch.object(api, 'fetch_feedback', return_value=list(items)), \
+                patch.object(api, 'fetch_checks', return_value=list(checks)), \
+                patch.object(api.time, 'time', side_effect=lambda: self.now), \
+                redirect_stdout(io.StringIO()) as output:
+            api.main()
+        return json.loads(output.getvalue())
+
+    def old_poll_state(self):
+        # Written by a version without conflict events: no conflict_reported list.
+        api.save_state(self.path, {'target': TARGET, 'head': 'abc', 'seen': [],
+                                   'quiet_since': 0, 'ci_reported': []})
+
+    def test_poll_reports_a_conflict_once_per_head_and_base(self):
+        self.old_poll_state()
+        event = self.poll(CONFLICT)
+        self.assertEqual((event['event'], event['base'], event['base_sha'], event['mergeable']),
+                         ('conflict', 'main', 'b1', 'CONFLICTING'))
+        self.assertEqual(self.poll(CONFLICT)['event'], 'waiting')
+        # The base moved again and still conflicts: a new pair.
+        self.assertEqual(self.poll(dict(CONFLICT, baseRefOid='b2'))['base_sha'], 'b2')
+        # So does a new head that still conflicts.
+        self.assertEqual(self.poll(dict(CONFLICT, baseRefOid='b2', headRefOid='def'))['event'], 'conflict')
+        self.assertEqual(len(api.load_state(self.path)['conflict_reported']), 3)
+
+    def test_poll_order_is_feedback_then_conflict_then_ci(self):
+        self.old_poll_state()
+        self.assertEqual(self.poll(CONFLICT, [ITEM], FAIL)['event'], 'feedback')
+        self.assertEqual(self.poll(CONFLICT, [ITEM], FAIL)['event'], 'conflict')
+        self.assertEqual(self.poll(CONFLICT, [ITEM], FAIL)['event'], 'ci_failed')
+
+    def test_poll_baseline_conflict_is_that_pairs_one_report(self):
+        baseline = self.poll(CONFLICT)
+        self.assertEqual((baseline['event'], baseline['mergeable'], baseline['base']),
+                         ('baseline', 'CONFLICTING', 'main'))
+        self.assertEqual(self.poll(CONFLICT)['event'], 'waiting')
+
+    def test_unknown_mergeability_is_no_conflict_and_holds_back_quiet(self):
+        self.old_poll_state()
+        self.now = 1000
+        unknown = dict(CONFLICT, mergeable='UNKNOWN')
+        event = self.poll(unknown, quiet=10)
+        self.assertEqual((event['event'], event['mergeable']), ('waiting', 'UNKNOWN'))
+        event = self.poll(dict(CONFLICT, mergeable='MERGEABLE'), quiet=10)
+        self.assertEqual((event['event'], event['mergeable']), ('quiet', 'MERGEABLE'))
+        value = state()
+        self.assertIsNone(hybrid.evaluate(value, unknown, [], [], 1000, 10, 0))
+        self.assertEqual(hybrid.evaluate(value, PR, [], [], 1000, 10, 0)['event'], 'quiet')
+
+    def test_a_reported_conflict_left_in_place_still_reaches_quiet(self):
+        self.old_poll_state()
+        self.assertEqual(self.poll(CONFLICT)['event'], 'conflict')
+        self.now = 700
+        event = self.poll(CONFLICT)
+        self.assertEqual((event['event'], event['mergeable']), ('quiet', 'CONFLICTING'))
+
+    def test_hybrid_conflict_is_staged_acknowledged_and_not_repeated(self):
+        value = state()  # No conflict_reported: a state file from before conflict events.
+        event = hybrid.evaluate(value, CONFLICT, [], FAIL, 1, 600, 0)
+        self.assertEqual((event['event'], event['base'], event['base_sha']), ('conflict', 'main', 'b1'))
+        value = json.loads(json.dumps(value))
+        self.assertEqual(hybrid.evaluate(value, CONFLICT, [], FAIL, 2, 600, 0), event)
+        hybrid.acknowledge(value, event['batch_id'], 3)
+        self.assertEqual(value['conflict_reported'], ['abc:b1'])
+        # Same pair still conflicting: CI on that head is next, the conflict is not repeated.
+        self.assertEqual(hybrid.evaluate(value, CONFLICT, [], FAIL, 4, 600, 0)['event'], 'ci_failed')
+
+    def test_hybrid_feedback_comes_before_a_conflict(self):
+        value = state()
+        event = hybrid.evaluate(value, CONFLICT, [ITEM], [], 1, 600, 0)
+        self.assertEqual(event['event'], 'feedback')
+        hybrid.acknowledge(value, event['batch_id'], 2)
+        self.assertEqual(hybrid.evaluate(value, CONFLICT, [ITEM], [], 3, 600, 0)['event'], 'conflict')
+
+    def test_hybrid_drops_a_pending_conflict_that_no_longer_holds(self):
+        for later in (dict(CONFLICT, mergeable='MERGEABLE'), dict(CONFLICT, baseRefOid='b2'),
+                      dict(CONFLICT, headRefOid='def', mergeable='MERGEABLE')):
+            with self.subTest(later=later):
+                value = state()
+                event = hybrid.evaluate(value, CONFLICT, [], [], 1, 600, 0)
+                replay = hybrid.evaluate(value, later, [], [], 2, 600, 0)
+                if later['mergeable'] == 'CONFLICTING':
+                    self.assertEqual(replay['event'], 'conflict')
+                    self.assertNotEqual(replay['batch_id'], event['batch_id'])
+                    self.assertEqual(replay['base_sha'], 'b2')
+                else:
+                    self.assertIsNone(replay)
+                    self.assertIsNone(value['pending'])
+
+    def hybrid_run(self, pr, max_wait, interval=60):
+        args = argparse.Namespace(pr=PR['url'], repo=None, host='github.com',
+            state=str(self.path), signal=str(Path(self.temp.name) / 'signal'),
+            ack=None, ignore_self=False, ignore_author=[], interval=interval, quiet=0,
+            settle=0, max_wait=max_wait, reconcile=300)
+        clock, calls = [0], []
+        def snap(*unused):
+            calls.append(clock[0])
+            return pr, [], []
+        def sleep(seconds):
+            clock[0] += seconds
+        with patch.object(hybrid.time, 'time', side_effect=lambda: clock[0]), \
+                patch.object(hybrid.time, 'monotonic', side_effect=lambda: clock[0]), \
+                patch.object(hybrid.time, 'sleep', side_effect=sleep), \
+                patch.object(hybrid, 'signal_status', return_value=('a', True)), \
+                patch.object(hybrid, 'snapshot', side_effect=snap), redirect_stdout(io.StringIO()) as output:
+            hybrid.run(args)
+        return json.loads(output.getvalue()), calls
+
+    def test_hybrid_baseline_conflict_is_reported_once(self):
+        baseline, _ = self.hybrid_run(CONFLICT, 0)
+        self.assertEqual((baseline['event'], baseline['mergeable'], baseline['base']),
+                         ('baseline', 'CONFLICTING', 'main'))
+        value = api.load_state(self.path)
+        hybrid.acknowledge(value, baseline['batch_id'], 1)
+        self.assertEqual(value['conflict_reported'], ['abc:b1'])
+        self.assertIsNone(hybrid.evaluate(value, CONFLICT, [], [], 2, 600, 0))
+        self.assertEqual(hybrid.evaluate(value, CONFLICT, [], [], 700, 600, 0)['event'], 'quiet')
+
+    def test_hybrid_rechecks_unknown_mergeability_at_the_poll_interval(self):
+        api.save_state(self.path, state())
+        event, calls = self.hybrid_run(dict(CONFLICT, mergeable='UNKNOWN'), 120)
+        self.assertEqual((event['event'], event['mergeable']), ('waiting', 'UNKNOWN'))
+        # Not every 300 seconds (healthy receiver), and never a busy loop.
+        self.assertEqual(calls, [0, 60, 120])
+
+    def test_receiver_wakes_only_for_pushes_to_the_base_branch(self):
+        push = {'repository': {'full_name': 'o/r'}, 'ref': 'refs/heads/main'}
+        self.assertTrue(receiver.relevant('push', push, 'o/r', 1, 'main'))
+        self.assertFalse(receiver.relevant('push', push, 'o/r', 1))
+        self.assertFalse(receiver.relevant('push', dict(push, ref='refs/heads/main-2'), 'o/r', 1, 'main'))
+        self.assertFalse(receiver.relevant('push', dict(push, ref='refs/tags/main'), 'o/r', 1, 'main'))
+        self.assertFalse(receiver.relevant('push', dict(push, repository={'full_name': 'x/y'}), 'o/r', 1, 'main'))
+
+    def test_receiver_subscribes_to_push_only_with_a_base(self):
+        for flags, expected in ((['--base', 'main'], True), ([], False)):
+            signal = Path(self.temp.name) / f'signal-{expected}.json'
+            argv = ['webhook_receiver.py', PR['url'], '--signal', str(signal), *flags]
+            with patch.object(sys, 'argv', argv), patch.object(receiver, 'HTTPServer') as server_class, \
+                    patch.object(receiver.subprocess, 'Popen') as popen:
+                server_class.return_value.server_port = 12345
+                server_class.return_value.handle_request.side_effect = \
+                    lambda: signal.with_suffix('.json.stop').touch()
+                popen.return_value.poll.return_value = None
+                receiver.main()
+            events = next(part for part in popen.call_args.args[0] if part.startswith('--events='))
+            self.assertEqual('push' in events.split('=')[1].split(','), expected)
+
+
+class CiLogTests(unittest.TestCase):
+    def test_actions_checks_carry_run_and_job_ids(self):
+        base = 'https://github.com/o/r/actions/runs/123'
+        checks = [{'name': 'a', 'bucket': 'fail', 'link': base + '/job/456'},
+                  {'name': 'b', 'bucket': 'cancel', 'link': base},
+                  {'name': 'c', 'bucket': 'fail', 'link': 'https://ci.example.com/build/9'},
+                  {'name': 'd', 'bucket': 'fail'},
+                  {'name': 'e', 'bucket': 'pass', 'link': base + '/job/789'}]
+        status, failing, buckets = api.summarize_checks(checks)
+        self.assertEqual(status, 'failing')
+        by_name = {check['name']: check for check in failing}
+        self.assertEqual((by_name['a']['run_id'], by_name['a']['job_id']), ('123', '456'))
+        self.assertEqual(by_name['b']['run_id'], '123')
+        self.assertNotIn('job_id', by_name['b'])
+        self.assertEqual(by_name['c'], checks[2])
+        self.assertEqual(by_name['d'], checks[3])
+        self.assertNotIn('run_id', buckets['pass'][0])
+
+    def run_logs(self, *flags, code=0, out='', err=''):
+        import ci_logs
+        done = subprocess.CompletedProcess([], code, out, err)
+        with patch.object(sys, 'argv', ['ci_logs.py', PR['url'], *flags]), \
+                patch.object(ci_logs.subprocess, 'run', return_value=done) as run, \
+                redirect_stdout(io.StringIO()) as output:
+            ci_logs.main()
+        return run.call_args.args[0], json.loads(output.getvalue())
+
+    def test_log_is_grouped_by_job_stripped_and_cut_to_the_tail(self):
+        lines = [f'build\tRun tests\t2026-11-17T01:02:{i:02d}.1234567Z line {i}' for i in range(10)]
+        lines.append('lint\tRun lint\t2026-11-17T01:03:00.0000000Z \x1b[31merror\x1b[0m: bad')
+        command, result = self.run_logs('--run', '123', '--tail', '3', out='\n'.join(lines))
+        self.assertEqual(command, ['gh', 'run', 'view', '--repo', 'github.com/o/r', '--log-failed', '123'])
+        self.assertTrue(result['available'])
+        build, lint = result['jobs']
+        self.assertEqual((build['job'], build['total_lines'], build['truncated']), ('build', 10, True))
+        self.assertEqual(build['log'], 'Run tests: line 7\nRun tests: line 8\nRun tests: line 9')
+        self.assertEqual((lint['log'], lint['truncated']), ('Run lint: error: bad', False))
+
+    def test_job_id_limits_the_log_to_that_job(self):
+        command, _ = self.run_logs('--run', '123', '--job', '456', out='build\tstep\tfailed')
+        self.assertEqual(command[-2:], ['--job', '456'])
+        self.assertNotIn('123', command)
+
+    def test_a_long_line_cannot_exceed_the_size_cap(self):
+        import ci_logs
+        _, result = self.run_logs('--run', '1', out='build\tstep\t' + 'x' * (ci_logs.MAX_CHARS * 2))
+        self.assertEqual(len(result['jobs'][0]['log']), ci_logs.MAX_CHARS)
+        self.assertTrue(result['jobs'][0]['truncated'])
+
+    def test_unavailable_logs_are_a_result_not_a_crash(self):
+        _, result = self.run_logs('--run', '1', code=1, err='log not found')
+        self.assertEqual(result['available'], False)
+        self.assertIn('log not found', result['reason'])
+        _, result = self.run_logs('--run', '1', out='\n')
+        self.assertFalse(result['available'])
+
+    def test_ids_must_be_numeric(self):
+        for flags in (['--run', '1; rm'], ['--job', '--repo'], []):
+            with self.subTest(flags=flags), redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+                self.run_logs(*flags)
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -127,7 +127,7 @@ The skill's package is checked locally; full client invocation remains unverifie
 
 ### Watching a PR until feedback stops
 
-Use `watch-pr-feedback` with a PR URL. It watches the PR with `gh` (hybrid mode by default) and, for each new batch of review comments, reviews, PR conversation comments or failing CI on the head SHA, runs the full `address-review-feedback` workflow. It stops when nothing new arrives for a 10-minute quiet window with no CI pending, the PR closes, or it reaches 10 rounds or 4 hours.
+Use `watch-pr-feedback` with a PR URL. It watches the PR with `gh` (hybrid mode by default) and, for each new batch of review comments, reviews, PR conversation comments, failing CI on the head SHA or a merge conflict with the base branch, runs the full `address-review-feedback` workflow. It stops when nothing new arrives for a 10-minute quiet window with no CI pending, the PR closes, or it reaches 10 rounds or 4 hours.
 
 ```text
 /devflow:watch-pr-feedback https://github.com/OWNER/REPO/pull/123
@@ -136,7 +136,9 @@ $devflow:watch-pr-feedback https://github.com/OWNER/REPO/pull/123 Use poll mode 
 
 Default `hybrid` mode uses a local `gh webhook forward` receiver to wake the helper, with full reconciliation every 5 minutes and 60-second polling fallback when the receiver is unavailable. It persists settling and unacknowledged batches for restart recovery. Ask for `poll` mode or no webhook setup to skip receiver setup. See [hybrid setup and lifecycle](skills/watch-pr-feedback/references/hybrid.md). The forwarding extension is for local development/testing, not production hosting.
 
-Comments you post with your own `gh` account count as feedback, so you can review your own PR with it. Replies the workflow posts carry a hidden `<!-- devflow:agent-reply -->` marker and are skipped, so they do not trigger new rounds; ask it to ignore your account entirely to get the old behavior. Limits you give apply to every round. It never merges, force-pushes or re-runs CI. The packaged polling script was tested against a real merged PR and with mocked events. Hybrid scheduling and recovery have offline tests; real webhook forwarding and a complete agent-driven watch are not established by those tests.
+Comments you post with your own `gh` account count as feedback, so you can review your own PR with it. Replies the workflow posts carry a hidden `<!-- devflow:agent-reply -->` marker and are skipped, so they do not trigger new rounds; ask it to ignore your account entirely to get the old behavior. Limits you give apply to every round.
+
+After a round pushes its fixes and replies, it marks as resolved the review threads that round demonstrably fixed (or found already fixed); rejected, unclear and blocked threads stay open for the reviewer. On a merge conflict it merges the base branch into the PR branch with an ordinary merge commit and pushes it, but only when both sides' intent is clear and the build and tests pass; otherwise it aborts the merge, leaves the branch untouched and stops to ask you. For a failing GitHub Actions check it reads the end of the failed-step logs before diagnosing. Say "do not resolve threads" or "do not merge the base" to turn either off. It never merges the PR, rebases, force-pushes or re-runs CI. The packaged polling script was tested against a real merged PR and with mocked events. Hybrid scheduling and recovery, conflict events, the CI log helper and the thread-resolving helper have offline tests; real webhook forwarding and a complete agent-driven watch are not established by those tests.
 
 ### Audit a repository before fixing bugs
 

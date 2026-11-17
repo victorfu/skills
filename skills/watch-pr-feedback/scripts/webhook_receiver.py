@@ -33,9 +33,13 @@ def log_tail(path):
     return text[-500:] or 'no error output'
 
 
-def relevant(event, payload, repo, number):
+def relevant(event, payload, repo, number, base=None):
     if payload.get('repository', {}).get('full_name', '').lower() != repo.lower():
         return False
+    if event == 'push':
+        # Only a push to the PR's base branch can create a merge conflict by itself;
+        # pushes to the head arrive as pull_request events.
+        return bool(base) and payload.get('ref') == 'refs/heads/' + base
     if event == 'issue_comment':
         issue = payload.get('issue', {})
         return issue.get('number') == number and 'pull_request' in issue
@@ -46,7 +50,7 @@ def relevant(event, payload, repo, number):
     return event in ('check_run', 'check_suite', 'status', 'workflow_run')
 
 
-def make_handler(target, route, wake):
+def make_handler(target, route, wake, base=None):
     deliveries = set()
     class Handler(BaseHTTPRequestHandler):
         def setup(self):
@@ -66,7 +70,7 @@ def make_handler(target, route, wake):
                 if not isinstance(payload, dict):
                     raise ValueError('Expected object')
                 if relevant(self.headers.get('X-GitHub-Event'), payload,
-                            target['repo'], target['pr']):
+                            target['repo'], target['pr'], base):
                     delivery = self.headers.get('X-GitHub-Delivery')
                     if not delivery or delivery not in deliveries:
                         wake()
@@ -92,6 +96,7 @@ def main():
     parser.add_argument('--host', default='github.com')
     parser.add_argument('--signal', required=True)
     parser.add_argument('--lifetime', type=int, default=14400)
+    parser.add_argument('--base', help="the PR's base branch; also wake on pushes to it (merge conflicts)")
     args = parser.parse_args()
     if args.lifetime < 1:
         parser.error('--lifetime must be positive')
@@ -117,7 +122,7 @@ def main():
             data['generation'] = secrets.token_hex(16)
             write()
         route = '/' + secrets.token_hex(24)
-        server = HTTPServer(('127.0.0.1', 0), make_handler(target, route, wake))
+        server = HTTPServer(('127.0.0.1', 0), make_handler(target, route, wake, args.base))
         server.timeout = 1
         process = None
         failure = None
@@ -129,7 +134,7 @@ def main():
                 # The forwarder's stderr is the only place gh explains a refusal; keep it.
                 with log_path.open('wb') as log:
                     process = subprocess.Popen([
-                        'gh', 'webhook', 'forward', '--repo=' + repo, '--events=' + EVENTS,
+                        'gh', 'webhook', 'forward', '--repo=' + repo, '--events=' + (EVENTS + ',push' if args.base else EVENTS),
                         '--url=http://127.0.0.1:' + str(server.server_port) + route],
                         env=env, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=log)
             except OSError as error:

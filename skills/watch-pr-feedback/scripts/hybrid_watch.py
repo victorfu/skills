@@ -76,15 +76,19 @@ def acknowledge(state, batch_id, now):
     state['seen_versions'].update(pending.get('versions', {}))
     if pending.get('ci_head') and pending['ci_head'] not in state['ci_reported']:
         state['ci_reported'].append(pending['ci_head'])
+    # State files from before conflict events have no such list.
+    if pending.get('conflict') and pending['conflict'] not in state.setdefault('conflict_reported', []):
+        state['conflict_reported'].append(pending['conflict'])
     state['pending'] = None
     state['settling'] = {}
     state['quiet_since'] = now
     state['last_ack'] = batch_id
 
 
-def stage(state, event, item_versions=None, ci_head=None):
+def stage(state, event, item_versions=None, ci_head=None, conflict=None):
     event['batch_id'] = uuid.uuid4().hex
-    state['pending'] = {'event': event, 'versions': item_versions or {}, 'ci_head': ci_head}
+    state['pending'] = {'event': event, 'versions': item_versions or {}, 'ci_head': ci_head,
+                        'conflict': conflict}
     return event
 
 
@@ -95,10 +99,13 @@ def evaluate(state, pr, items, checks, now, quiet, settle):
     if pr['headRefOid'] != state['head']:
         state['head'] = pr['headRefOid']
         state['quiet_since'] = now
+    conflict = api.conflict_key(pr)
     pending = state.get('pending')
     if pending:
         if pending.get('ci_head') and pending['ci_head'] != state['head']:
             state['pending'] = None  # Old-head CI cannot authorize a new-head fix.
+        elif pending['event'].get('event') == 'conflict' and pending.get('conflict') != conflict:
+            state['pending'] = None  # That head and base no longer conflict, or either one moved.
         else:
             return pending['event']
     current = versions(items)
@@ -115,10 +122,15 @@ def evaluate(state, pr, items, checks, now, quiet, settle):
         excerpts = [{**item, 'body': api.excerpt(item.get('body'))}
                     for item in items if item['key'] in fresh]
         return stage(state, dict(base, event='feedback', items=excerpts), fresh)
+    # Before CI: a conflicting PR often has no CI run, and merging the base changes what CI tests.
+    if not fresh and conflict and conflict not in state.get('conflict_reported', []):
+        return stage(state, dict(base, event='conflict', **api.merge_fields(pr)), conflict=conflict)
     if not fresh and status == 'failing' and state['head'] not in state['ci_reported']:
         return stage(state, dict(base, event='ci_failed', failing_checks=failing), ci_head=state['head'])
-    if not fresh and status != 'pending' and now - state['quiet_since'] >= quiet:
-        return dict(base, event='quiet', ci=status, failing_checks=failing,
+    # An unknown mergeability may still turn into a conflict; do not finish on it.
+    if (not fresh and status != 'pending' and pr.get('mergeable') != 'UNKNOWN'
+            and now - state['quiet_since'] >= quiet):
+        return dict(base, event='quiet', ci=status, failing_checks=failing, mergeable=pr.get('mergeable'),
                     quiet_seconds=int(now - state['quiet_since']))
     return None
 
@@ -156,15 +168,17 @@ def run(args):
         if state is None:
             state = {'mode': 'hybrid', 'version': 1, 'target': target,
                      'head': pr['headRefOid'], 'seen_versions': {}, 'ci_reported': [],
-                     'quiet_since': now, 'settling': {}}
+                     'conflict_reported': [], 'quiet_since': now, 'settling': {}}
             if pr['state'] != 'OPEN':
                 event = dict(event='closed', url=pr['url'], head=pr['headRefOid'], pr_state=pr['state'])
             else:
                 event = stage(state, dict(event='baseline', url=pr['url'], head=pr['headRefOid'],
-                              pr_state=pr['state'], existing_feedback=len(items), ci=status,
+                              pr_state=pr['state'], **api.merge_fields(pr),
+                              existing_feedback=len(items), ci=status,
                               failing_checks=failing, ignored_authors=sorted(ignored),
                               self_login=self_login),
-                              versions(items), pr['headRefOid'] if status == 'failing' else None)
+                              versions(items), pr['headRefOid'] if status == 'failing' else None,
+                              api.conflict_key(pr))
         else:
             event = evaluate(state, pr, items, checks, now, args.quiet, args.settle)
         api.save_state(path, state)
@@ -177,7 +191,7 @@ def run(args):
             if not active:
                 # Say why the watch is polling, so the fallback is never silent.
                 fields['receiver_reason'] = signal_problem(signal, target, time.time())[1] or 'receiver recovered'
-            api.emit('waiting', url=pr['url'], head=pr['headRefOid'], ci=status,
+            api.emit('waiting', url=pr['url'], head=pr['headRefOid'], ci=status, mergeable=pr.get('mergeable'),
                      pending_checks=[c['name'] for c in buckets.get('pending', [])],
                      unsettled_feedback=len(state.get('settling', {})), **fields)
             return
@@ -185,6 +199,9 @@ def run(args):
         deadlines = [delay, args.max_wait - elapsed]
         if state.get('settling'):
             deadlines.append(max(0, state['last_new_at'] + args.settle - now))
+        elif pr.get('mergeable') == 'UNKNOWN':
+            # GitHub computes mergeability shortly after it is asked; no webhook announces the answer.
+            deadlines.append(args.interval)
         elif status != 'pending':
             deadlines.append(max(0, state['quiet_since'] + args.quiet - now))
         until = time.monotonic() + min(deadlines)
